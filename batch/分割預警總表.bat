@@ -1,0 +1,1 @@
+..\bin\trc.exe split -sa masterlist 108-1期中預警總表.xlsx -teacher 教師名單.xlsx -exptemplate 空白.xlsx
