@@ -18,7 +18,8 @@ func (sa *scoreAlert) loadTeacherInfo() (err error) {
 	sa.teacherMap = make(map[string][]string)
 	teacherXlsx, err := excelize.OpenFile(teacherInfoFilePath)
 	if err != nil {
-		return err
+		fmt.Println("\rERROR:", err)
+		os.Exit(2)
 	}
 	teacherXlsxSheetName := "工作表"
 	teacherRows, err := teacherXlsx.GetRows(teacherXlsxSheetName)
@@ -39,7 +40,8 @@ func (sa *scoreAlert) loadScoreAlertList() (err error) {
 	scoreAlert, err := excelize.OpenFile(scoreAlertFilePath)
 	scoreAlertSheetName := "工作表"
 	if err != nil {
-		return err
+		fmt.Println("\rERROR:", err)
+		os.Exit(2)
 	}
 	sa.scoreAlertRows, err = scoreAlert.GetRows(scoreAlertSheetName)
 	if err != nil {
@@ -82,7 +84,8 @@ func (sa *scoreAlert) splitScoreAlertData() {
 func (sa *scoreAlert) exportToExcel(sheetName string, xiOfrowXi [][]string) (err error) {
 	xlsxOutputFile, err := excelize.OpenFile(exportTemplateFilePath)
 	if err != nil {
-		return err
+		fmt.Println("\rERROR:", err)
+		os.Exit(2)
 	}
 
 	xlsxOutputFileExists := false

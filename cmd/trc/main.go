@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -11,19 +12,15 @@ import (
 var (
 	help bool
 
-	downloadSyllabusVideoLink bool //download -video
-	downloadTeacher           bool //download -teacher
-	splitScoreAlert           bool //split -sa
-
-	//download
+	//download video parameter
 	academicYear   string //-year
 	semester       string //-semester
 	outputFileName string //-filename
 
-	//split
-	scoreAlertFilePath     string //masterlist
-	teacherInfoFilePath    string //teacher
-	exportTemplateFilePath string //exptemplate
+	//split scoreAlert parameter
+	scoreAlertFilePath     string //-masterlist
+	teacherInfoFilePath    string //-teacher
+	exportTemplateFilePath string //-exptemplate
 )
 
 func getSyllabusVideo() {
@@ -150,6 +147,19 @@ func splitScoreAlertFile() {
 	quit := make(chan struct{})
 	sa := &scoreAlert{}
 
+	if teacherInfoFilePath == "" {
+		fmt.Println("\rERROR:未設定\"教師名單\"檔案路徑名稱")
+		os.Exit(2)
+	}
+	if scoreAlertFilePath == "" {
+		fmt.Println("\rERROR:未設定\"預警總表\"檔案路徑名稱")
+		os.Exit(2)
+	}
+	if exportTemplateFilePath == "" {
+		fmt.Println("\rERROR:未設定\"空白分表\"檔案路徑名稱")
+		os.Exit(2)
+	}
+
 	go spinner("Loading teacher list", 80*time.Millisecond, quit)
 	err := sa.loadTeacherInfo()
 	if err != nil {
@@ -195,12 +205,12 @@ func init() {
 		fmt.Println("Usage: trc <command> [<args>]")
 		fmt.Println()
 		fmt.Println("Commands:")
-		fmt.Println("  trc download [<args>]\n        下載檔案(教師資料、數位課綱連結)")
-		fmt.Println("  trc split [<args>]\n        分割檔案(分割預警總表)")
+		fmt.Println("  download [<args>]\n        下載檔案(教師資料、數位課綱連結)")
+		fmt.Println("  split [<args>]\n        分割檔案(分割預警總表)")
 	}
 }
 
-func setDownloadFlag(downloadCommand *flag.FlagSet) {
+func setDownloadVideoFlag(downloadVideoCommand *flag.FlagSet) {
 	//set default video parameter
 	defaultAcademicYear := ""
 	defaultSemester := ""
@@ -211,27 +221,23 @@ func setDownloadFlag(downloadCommand *flag.FlagSet) {
 		defaultAcademicYear = strconv.Itoa(time.Now().Year() - 1911)
 		defaultSemester = "1"
 	}
-	downloadCommand.BoolVar(&downloadSyllabusVideoLink, "video", false, "下載數位課綱影片連結")
-	downloadCommand.StringVar(&academicYear, "year", defaultAcademicYear, "設定學年度，預設為當前學年度")
-	downloadCommand.StringVar(&semester, "semester", defaultSemester, "設定學期，預設為當前學期")
-	downloadCommand.StringVar(&outputFileName, "filename", "數位課綱", "設定檔名，預設為查詢目標學年+學期+數位課綱")
-
-	downloadCommand.BoolVar(&downloadTeacher, "teacher", false, "下載教師資料")
+	downloadVideoCommand.StringVar(&academicYear, "year", defaultAcademicYear, "設定學年度，預設為當前學年度")
+	downloadVideoCommand.StringVar(&semester, "semester", defaultSemester, "設定學期，預設為當前學期")
+	downloadVideoCommand.StringVar(&outputFileName, "filename", "數位課綱", "設定檔名，預設為查詢目標學年+學期+數位課綱")
 }
 
-func setSplitFlag(splitCommand *flag.FlagSet) {
-	splitCommand.BoolVar(&splitScoreAlert, "sa", false, "分割預警總表")
-	splitCommand.StringVar(&scoreAlertFilePath, "masterlist", "", "設定預警總表檔案路徑名稱")
-	splitCommand.StringVar(&teacherInfoFilePath, "teacher", "", "設定教師名單檔案路徑名稱")
-	splitCommand.StringVar(&exportTemplateFilePath, "exptemplate", "", "設定空白分表檔案名稱")
+func setSplitScoreAlertFlag(splitScoreAlertCommand *flag.FlagSet) {
+	splitScoreAlertCommand.StringVar(&scoreAlertFilePath, "masterlist", "", "設定預警總表檔案路徑名稱")
+	splitScoreAlertCommand.StringVar(&teacherInfoFilePath, "teacher", "", "設定教師名單檔案路徑名稱")
+	splitScoreAlertCommand.StringVar(&exportTemplateFilePath, "exptemplate", "", "設定空白分表檔案名稱")
 }
 
 func main() {
 	flag.Parse()
-	downloadCommand := flag.NewFlagSet("download", flag.ExitOnError)
-	setDownloadFlag(downloadCommand)
-	splitCommand := flag.NewFlagSet("split", flag.ExitOnError)
-	setSplitFlag(splitCommand)
+	downloadVideoCommand := flag.NewFlagSet("download video", flag.ExitOnError)
+	setDownloadVideoFlag(downloadVideoCommand)
+	splitScoreAlertCommand := flag.NewFlagSet("split scoreAlert", flag.ExitOnError)
+	setSplitScoreAlertFlag(splitScoreAlertCommand)
 
 	if len(os.Args) == 1 || help {
 		flag.Usage()
@@ -240,20 +246,76 @@ func main() {
 
 	switch os.Args[1] {
 	case "download":
-		downloadCommand.Parse(os.Args[2:])
-		if downloadSyllabusVideoLink == true {
-			fmt.Println(">> GetSyllabusVideoLink")
-			getSyllabusVideo()
+
+		downloadUsage := func() {
+			fmt.Println("Usage: trc download <command> [<args>]")
+			fmt.Println()
+			fmt.Println("Commands:")
+			// fmt.Println("  video [<args>]\n        下載數位課綱影片連結")
+			fmt.Println("  video [<args>]\t下載數位課綱影片連結")
+			for key, value := range downloadVideoCommand.GetFlags() {
+				fmt.Println("        -" + key + " " + value.Usage)
+			}
+			// fmt.Println("  teacher [<args>]\n        下載教師資料")
+			fmt.Println("  teacher [<args>]\t下載教師資料")
 		}
-		if downloadTeacher == true {
-			fmt.Println(">> GetTeacherData")
-			getTeacher()
+
+		if len(os.Args) <= 2 {
+			downloadUsage()
+			return
 		}
+
+		if len(os.Args) >= 2 {
+			switch os.Args[2] {
+			case "video":
+				err := downloadVideoCommand.Parse(os.Args[3:])
+				if err != nil {
+					log.Println(err)
+				}
+
+				fmt.Println(">> GetSyllabusVideoLink")
+				getSyllabusVideo()
+			case "teacher":
+				fmt.Println(">> GetTeacherData")
+				getTeacher()
+			default:
+				downloadUsage()
+				return
+			}
+		}
+
 	case "split":
-		splitCommand.Parse(os.Args[2:])
-		if splitScoreAlert == true {
-			fmt.Println(">> SplitScoreAlertFile")
-			splitScoreAlertFile()
+
+		splitUsage := func() {
+			fmt.Println("Usage: trc split <command> [<args>]")
+			fmt.Println()
+			fmt.Println("Commands:")
+			// fmt.Println("  scoreAlert [<args>]\n        分割預警總表")
+			fmt.Println("  scoreAlert [<args>]\t分割預警總表")
+			for key, value := range splitScoreAlertCommand.GetFlags() {
+				fmt.Println("        -" + key + " " + value.Usage)
+			}
+		}
+
+		if len(os.Args) <= 2 {
+			splitUsage()
+			return
+		}
+
+		if len(os.Args) >= 2 {
+			switch os.Args[2] {
+			case "scoreAlert":
+				err := splitScoreAlertCommand.Parse(os.Args[3:])
+				if err != nil {
+					log.Println(err)
+				}
+
+				fmt.Println(">> SplitScoreAlertFile")
+				splitScoreAlertFile()
+			default:
+				splitUsage()
+				return
+			}
 		}
 	default:
 		fmt.Printf("%q is not a valid command.\n", os.Args[1])
