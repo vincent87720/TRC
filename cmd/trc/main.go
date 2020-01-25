@@ -21,6 +21,10 @@ var (
 	scoreAlertFilePath     string //-masterlist
 	teacherInfoFilePath    string //-teacher
 	exportTemplateFilePath string //-exptemplate
+
+	//merge video parameter
+	inputFilePath  string //-input
+	outputFilePath string //-output
 )
 
 func getSyllabusVideo() {
@@ -49,6 +53,37 @@ func getSyllabusVideo() {
 	close(quit)
 	fmt.Println("\r> Export completed")
 
+}
+
+func mergeSyllabusVideo() {
+	quit := make(chan struct{})
+	m := &merge{}
+
+	go spinner("Loading", 80*time.Millisecond, quit)
+	err := m.loadSyllabusVideoList()
+	if err != nil {
+		panic(err)
+	}
+	close(quit)
+	fmt.Println("\r> Loading completed")
+
+	quit = make(chan struct{})
+	go spinner("Merging", 80*time.Millisecond, quit)
+	err = m.mergeSyllabusVideoList()
+	if err != nil {
+		panic(err)
+	}
+	close(quit)
+	fmt.Println("\r> Merge completed")
+
+	quit = make(chan struct{})
+	go spinner("Exporting", 80*time.Millisecond, quit)
+	err = m.exportMergedCourseDataToExcel(outputFilePath)
+	if err != nil {
+		panic(err)
+	}
+	close(quit)
+	fmt.Println("\r> Export completed")
 }
 
 func getTeacher() {
@@ -207,6 +242,7 @@ func init() {
 		fmt.Println("Commands:")
 		fmt.Println("  download [<args>]\n        下載檔案(教師資料、數位課綱連結)")
 		fmt.Println("  split [<args>]\n        分割檔案(分割預警總表)")
+		fmt.Println("  merge [<args>]\n        合併檔案(合併數位課綱資料)")
 	}
 }
 
@@ -232,12 +268,19 @@ func setSplitScoreAlertFlag(splitScoreAlertCommand *flag.FlagSet) {
 	splitScoreAlertCommand.StringVar(&exportTemplateFilePath, "exptemplate", "", "設定空白分表檔案名稱")
 }
 
+func setMergeVideoFlag(mergeVideoCommand *flag.FlagSet) {
+	mergeVideoCommand.StringVar(&inputFilePath, "input", "數位課綱", "設定欲合併的數位課綱檔案路徑名稱")
+	mergeVideoCommand.StringVar(&outputFilePath, "output", "數位課綱(已合併)", "設定合併後輸出的檔案名稱")
+}
+
 func main() {
 	flag.Parse()
 	downloadVideoCommand := flag.NewFlagSet("download video", flag.ExitOnError)
 	setDownloadVideoFlag(downloadVideoCommand)
 	splitScoreAlertCommand := flag.NewFlagSet("split scoreAlert", flag.ExitOnError)
 	setSplitScoreAlertFlag(splitScoreAlertCommand)
+	mergeVideoCommand := flag.NewFlagSet("merge video", flag.ExitOnError)
+	setMergeVideoFlag(mergeVideoCommand)
 
 	if len(os.Args) == 1 || help {
 		flag.Usage()
@@ -314,6 +357,37 @@ func main() {
 				splitScoreAlertFile()
 			default:
 				splitUsage()
+				return
+			}
+		}
+	case "merge":
+		mergeUsage := func() {
+			fmt.Println("Usage: trc merge <command> [<args>]")
+			fmt.Println()
+			fmt.Println("Commands:")
+			fmt.Println("  video [<args>]\t依教師合併數位課綱影片問題")
+			for key, value := range mergeVideoCommand.GetFlags() {
+				fmt.Println("        -" + key + " " + value.Usage)
+			}
+		}
+
+		if len(os.Args) <= 2 {
+			mergeUsage()
+			return
+		}
+
+		if len(os.Args) >= 2 {
+			switch os.Args[2] {
+			case "video":
+				err := mergeVideoCommand.Parse(os.Args[3:])
+				if err != nil {
+					log.Println(err)
+				}
+
+				fmt.Println(">> MergeSyllabusVideoLink")
+				mergeSyllabusVideo()
+			default:
+				mergeUsage()
 				return
 			}
 		}
