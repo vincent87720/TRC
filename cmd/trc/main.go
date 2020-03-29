@@ -1,399 +1,327 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"time"
+	"os/user"
+	"strings"
+
+	"github.com/Luxurioust/excelize"
+	"github.com/fatih/color"
 )
 
-var (
+type college struct {
+	collegeID   string //學院代號
+	collegeName string //學院名稱
+}
+
+type department struct {
+	college
+	departmentID   string //學系序號
+	departmentName string //學系名稱
+}
+
+type teacher struct {
+	department
+	teacherID         string //教師編號
+	teacherName       string //教師姓名
+	teacherPhone      string //分機
+	teacherMail       string //電子郵件
+	teacherSpace      string //研究室編號
+	teacherState      string //任職狀態
+	teacherLevel      string //職稱
+	teacherLastUpdate string //最後更新日期
+}
+
+type course struct {
+	department
+	courseID      string   //課程編號
+	courseName    string   //課程名稱
+	courseSubName string   //課程副標題
+	year          int      //學年度
+	semester      int      //學期
+	system        string   //學制
+	group         string   //組別
+	grade         string   //年級
+	class         string   //班級
+	credit        string   //學分數
+	chooseSelect  string   //必選別
+	interval      string   //上課時數
+	time          []string //上課時間
+	classRoom     []string //教室
+	numOfPeople   string   //選課人數
+	annex         string   //合班註記
+	annexID       string   //合班序號
+	remark        string   //備註
+}
+
+type student struct {
+	department
+	studentID   string //學生學號
+	studentName string //學生姓名
+}
+
+type syllabusVideo struct {
+	course
+	videoURL        string //數位課綱連結
+	problemOfCourse string //影片問題
+}
+
+type scoreAllert struct {
+	course
+	student
+	allertReason string //預警原因
+	tutorMethod  string //輔導方式
+}
+
+type rapidPrint struct {
+	course
+	timeNClassRoom string
+}
+
+type facing struct {
+	facingName string    //面向名稱
+	score      []float64 //各評委分數
+	difference []float64 //差分
+}
+
+//file 檔案
+type file struct {
+	filePath    string     //檔案路徑
+	fileName    string     //檔案名稱
+	sheetName   string     //工作表名稱
+	firstRow    []string   //第一行
+	dataRows    [][]string //資料
+	newDataRows [][]string //新資料
+	xlsx        *excelize.File
+}
+
+//svFile 數位課綱檔案
+type svFile struct {
+	file
+	depCol       int                         //開課學系欄位(department)
+	cidCol       int                         //課程編號欄位(courseID)
+	csnCol       int                         //課程名稱欄位(courseName)
+	pocCol       int                         //影片問題欄位(problemOfCourse)
+	cthCol       int                         //任課老師欄位(courseTeacher)
+	gbtd         map[teacher][]syllabusVideo //group by teacher data
+	mergedXi     [][]string                  //合併後的陣列
+	maxCourseNum int                         //所有老師中，擁有最多科目的數量
+}
+
+//saFile 成績預警檔案
+type saFile struct {
+	file
+	csdCol int                       //開課單位(courseDepartment)
+	cidCol int                       //科目序號(courseID)
+	csnCol int                       //課程名稱(courseName)
+	cthCol int                       //任課老師(courseTeacher)
+	sidCol int                       //學生學號(studentID)
+	stnCol int                       //學生姓名(studentName)
+	alrCol int                       //預警原由(alertReason)
+	gbtd   map[teacher][]scoreAllert //group by teacher data
+}
+
+//thFile 教師資料檔案
+type thFile struct {
+	file
+	didCol int //學院編號
+	tidCol int //教師編號
+	trnCol int //教師姓名
+	tdpCol int //教師系所
+
+	teacherMap map[string][]teacher //教師資料
+}
+
+//rpFile 快速印刷檔案
+type rpFile struct {
+	file
+	trnCol int                      //教師姓名欄位
+	tstCol int                      //專兼任別欄位
+	sysCol int                      //開課學制欄位
+	csdCol int                      //開課系所欄位
+	cidCol int                      //科目序號欄位
+	ifoCol int                      //系-組-年-班欄位
+	csnCol int                      //科目名稱欄位
+	ccsCol int                      //選修別欄位
+	cdtCol int                      //學分欄位
+	ctmCol int                      //時數欄位
+	wtrCol int                      //星期-時間-教室欄位
+	nopCol int                      //選課人數欄位
+	annCol int                      //合班註記欄位
+	aidCol int                      //合班序號欄位
+	rmkCol int                      //備註欄位
+	gbtd   map[teacher][]rapidPrint //group by teacher data
+}
+
+//dcFile 差分計算檔案
+type dcFile struct {
+	file
+	judgeNum int                  //評審數量
+	judge    []string             //評審
+	gbsd     map[student][]facing //group by student data
+}
+
+//downloadFile 下載的檔案
+type downloadTeacherFile struct {
+	file
+}
+
+type command struct {
+	commandString string
+	commandAction string
+	flagSet       *flag.FlagSet
+}
+
+type commandSet struct {
+	lyr1commandSet map[string][]command //第一層指令集
+	lyr2commandSet map[string][]command //第二層指令集
+}
+
+type flags struct {
 	help bool
 
+	//general parameter
+	inputFilePath   string //-inPath
+	inputFileName   string //-inName
+	inputSheetName  string //-inSheet
+	outputFilePath  string //-outPath
+	outputFileName  string //-outName
+	outputSheetName string //-outSheet
+
 	//download video parameter
-	academicYear   string //-year
-	semester       string //-semester
-	outputFileName string //-filename
+	academicYear string //-year
+	semester     string //-semester
+
+	//merge syllabus video parameter
+	svInputFile  []string
+	svOutputFile []string
+
+	//merge course data parameter
+	cdInputFile  []string
+	cdOutputFile []string
 
 	//split scoreAlert parameter
-	scoreAlertFilePath     string //-masterlist
-	teacherInfoFilePath    string //-teacher
-	exportTemplateFilePath string //-exptemplate
+	scoreAlertFile     []string //-masterlist
+	teacherInfoFile    []string //-teacher
+	exportTemplateFile []string //-exptemplate
 
-	//merge video parameter
-	inputFilePath  string //-input
-	outputFilePath string //-output
-)
+	//calculate difference parameter
+	readAllFilesInDir bool
 
-func getSyllabusVideo() {
-
-	quit := make(chan struct{})
-
-	sr := newCourseList()
-	co := &course{}
-	sr.setAcademicYear(academicYear)
-	sr.setSemester(semester)
-
-	go spinner("Downloading", 80*time.Millisecond, quit)
-	sr.getCourseData()
-	close(quit)
-	fmt.Println("\r> Download completed")
-
-	quit = make(chan struct{})
-	go spinner("Parsing", 80*time.Millisecond, quit)
-	co.find(sr.htmlNode)
-	close(quit)
-	fmt.Println("\r> Parsing completed")
-
-	quit = make(chan struct{})
-	go spinner("Exporting", 80*time.Millisecond, quit)
-	co.exportToExcel(outputFileName)
-	close(quit)
-	fmt.Println("\r> Export completed")
-
+	downloadVideoFlagSet   *flag.FlagSet
+	splitScoreAlertFlagSet *flag.FlagSet
+	mergeVideoFlagSet      *flag.FlagSet
+	mergeCourseFlagSet     *flag.FlagSet
+	calcDifferentFlagSet   *flag.FlagSet
 }
 
-func mergeSyllabusVideo() {
-	quit := make(chan struct{})
-	m := &merge{}
-
-	go spinner("Loading", 80*time.Millisecond, quit)
-	err := m.loadSyllabusVideoList()
-	if err != nil {
-		panic(err)
-	}
-	close(quit)
-	fmt.Println("\r> Loading completed")
-
-	quit = make(chan struct{})
-	go spinner("Merging", 80*time.Millisecond, quit)
-	err = m.mergeSyllabusVideoList()
-	if err != nil {
-		panic(err)
-	}
-	close(quit)
-	fmt.Println("\r> Merge completed")
-
-	quit = make(chan struct{})
-	go spinner("Exporting", 80*time.Millisecond, quit)
-	err = m.exportMergedCourseDataToExcel(outputFilePath)
-	if err != nil {
-		panic(err)
-	}
-	close(quit)
-	fmt.Println("\r> Export completed")
-}
-
-func getTeacher() {
-	teacher := &teacher{}
-
-	engineering := &searchTeacherRequest{
-		dept:       "'2000','5040','5011','5022','5080','5100','5240','6013','5023','5081','5082','6312'",
-		deptItem:   "1",
-		searchItem: "4",
-	}
-	management := &searchTeacherRequest{
-		dept:       "'2003','8021','7003','6410','5110','5120','5150','5131','5140','5190','7004'",
-		deptItem:   "2",
-		searchItem: "4",
-	}
-	foreignLanguages := &searchTeacherRequest{
-		dept:       "'2005','5212','5220','5230','5211','5231','6861'",
-		deptItem:   "3",
-		searchItem: "4",
-	}
-	desighAndArts := &searchTeacherRequest{
-		dept:       "'2004','5070','5030','5060','5090','6001','5091','5096','6600'",
-		deptItem:   "4",
-		searchItem: "4",
-	}
-	biotechnology := &searchTeacherRequest{
-		dept:       "'2006','5052','5512','5180','5250'",
-		deptItem:   "5",
-		searchItem: "4",
-	}
-	tourism := &searchTeacherRequest{
-		dept:       "'2007','5260','5270','7180','5161','5163','5659'",
-		deptItem:   "6",
-		searchItem: "4",
-	}
-	studentAffairsAndPhysical := &searchTeacherRequest{
-		dept:       "'3200','3300'",
-		deptItem:   "7",
-		searchItem: "4",
-	}
-	center := &searchTeacherRequest{
-		dept:       "'9010','4210','4020','4007','4025'",
-		deptItem:   "8",
-		searchItem: "4",
-	}
-	nursing := &searchTeacherRequest{
-		dept:       "'2008','7173','5290','5280','5172','5242','6800'",
-		deptItem:   "9",
-		searchItem: "4",
-	}
-
-	quit := make(chan struct{})
-	go spinner("Downloading", 80*time.Millisecond, quit)
-	engineering.getTeacherData()
-	fmt.Println("\r> 工 學 院OK ")
-	management.getTeacherData()
-	fmt.Println("\r> 管理學院OK ")
-	foreignLanguages.getTeacherData()
-	fmt.Println("\r> 外語學院OK ")
-	desighAndArts.getTeacherData()
-	fmt.Println("\r> 設藝學院OK ")
-	biotechnology.getTeacherData()
-	fmt.Println("\r> 生資學院OK ")
-	tourism.getTeacherData()
-	fmt.Println("\r> 觀光學院OK ")
-	studentAffairsAndPhysical.getTeacherData()
-	fmt.Println("\r> 學程單位OK ")
-	center.getTeacherData()
-	fmt.Println("\r> 學程中心OK ")
-	nursing.getTeacherData()
-	close(quit)
-	fmt.Println("\r> Download completed")
-
-	quit = make(chan struct{})
-	go spinner("Parsing", 80*time.Millisecond, quit)
-	teacher.parseTeacherData(engineering.deptItem, engineering.sitemap)
-	teacher.parseTeacherData(management.deptItem, management.sitemap)
-	teacher.parseTeacherData(foreignLanguages.deptItem, foreignLanguages.sitemap)
-	teacher.parseTeacherData(desighAndArts.deptItem, desighAndArts.sitemap)
-	teacher.parseTeacherData(biotechnology.deptItem, biotechnology.sitemap)
-	teacher.parseTeacherData(tourism.deptItem, tourism.sitemap)
-	teacher.parseTeacherData(studentAffairsAndPhysical.deptItem, studentAffairsAndPhysical.sitemap)
-	teacher.parseTeacherData(center.deptItem, center.sitemap)
-	teacher.parseTeacherData(nursing.deptItem, nursing.sitemap)
-	close(quit)
-	fmt.Println("\r> Parsing completed")
-
-	quit = make(chan struct{})
-	go spinner("Exporting", 80*time.Millisecond, quit)
-	teacher.ExportToExcel("教師名單")
-	close(quit)
-	fmt.Println("\r> Export completed")
-}
-
-func splitScoreAlertFile() {
-	quit := make(chan struct{})
-	sa := &scoreAlert{}
-
-	if teacherInfoFilePath == "" {
-		fmt.Println("\rERROR:未設定\"教師名單\"檔案路徑名稱")
-		os.Exit(2)
-	}
-	if scoreAlertFilePath == "" {
-		fmt.Println("\rERROR:未設定\"預警總表\"檔案路徑名稱")
-		os.Exit(2)
-	}
-	if exportTemplateFilePath == "" {
-		fmt.Println("\rERROR:未設定\"空白分表\"檔案路徑名稱")
-		os.Exit(2)
-	}
-
-	go spinner("Loading teacher list", 80*time.Millisecond, quit)
-	err := sa.loadTeacherInfo()
-	if err != nil {
-		panic(err)
-	}
-	close(quit)
-	fmt.Println("\r> Loaded teacher list")
-
-	quit = make(chan struct{})
-	go spinner("Loading score alert list", 80*time.Millisecond, quit)
-	err = sa.loadScoreAlertList()
-	if err != nil {
-		panic(err)
-	}
-	close(quit)
-	fmt.Println("\r> Loaded score alert list ")
-
-	quit = make(chan struct{})
-	go spinner("Splitting", 80*time.Millisecond, quit)
-	sa.splitScoreAlertData()
-	close(quit)
-	fmt.Println("\r> Splitting completed")
-}
-
-func spinner(status string, delay time.Duration, ch chan struct{}) {
-	for {
-		select {
-		case <-ch:
-			fmt.Printf("\r                              ")
-			return
-		default:
-			for _, r := range `-\|/` {
-				fmt.Printf("\r%c %s", r, status)
-				time.Sleep(delay)
-			}
-		}
-	}
-}
-
-func init() {
-	flag.BoolVar(&help, "help", false, "Usage")
-	flag.Usage = func() {
-		fmt.Println("Usage: trc <command> [<args>]")
-		fmt.Println()
-		fmt.Println("Commands:")
-		fmt.Println("  download [<args>]\n        下載檔案(教師資料、數位課綱連結)")
-		fmt.Println("  split [<args>]\n        分割檔案(分割預警總表)")
-		fmt.Println("  merge [<args>]\n        合併檔案(合併數位課綱資料)")
-	}
-}
-
-func setDownloadVideoFlag(downloadVideoCommand *flag.FlagSet) {
-	//set default video parameter
-	defaultAcademicYear := ""
-	defaultSemester := ""
-	if time.Now().Month() <= 7 {
-		defaultAcademicYear = strconv.Itoa(time.Now().Year() - 1911 - 1)
-		defaultSemester = "2"
+//選擇使用模式
+func selectMode(trcCmd *commandSet, f *flags) {
+	if len(os.Args) > 1 {
+		autoMode(trcCmd, f)
 	} else {
-		defaultAcademicYear = strconv.Itoa(time.Now().Year() - 1911)
-		defaultSemester = "1"
+		manualMode(trcCmd, f)
 	}
-	downloadVideoCommand.StringVar(&academicYear, "year", defaultAcademicYear, "設定學年度，預設為當前學年度")
-	downloadVideoCommand.StringVar(&semester, "semester", defaultSemester, "設定學期，預設為當前學期")
-	downloadVideoCommand.StringVar(&outputFileName, "filename", "數位課綱", "設定檔名，預設為查詢目標學年+學期+數位課綱")
 }
 
-func setSplitScoreAlertFlag(splitScoreAlertCommand *flag.FlagSet) {
-	splitScoreAlertCommand.StringVar(&scoreAlertFilePath, "masterlist", "", "設定預警總表檔案路徑名稱")
-	splitScoreAlertCommand.StringVar(&teacherInfoFilePath, "teacher", "", "設定教師名單檔案路徑名稱")
-	splitScoreAlertCommand.StringVar(&exportTemplateFilePath, "exptemplate", "", "設定空白分表檔案名稱")
+func autoMode(trcCmd *commandSet, f *flags) {
+	flag.Parse()
+	analyseCommand(trcCmd, f)
 }
 
-func setMergeVideoFlag(mergeVideoCommand *flag.FlagSet) {
-	mergeVideoCommand.StringVar(&inputFilePath, "input", "數位課綱", "設定欲合併的數位課綱檔案路徑名稱")
-	mergeVideoCommand.StringVar(&outputFilePath, "output", "數位課綱(已合併)", "設定合併後輸出的檔案名稱")
+func manualMode(trcCmd *commandSet, f *flags) {
+
+	usr, err := user.Current()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+
+	for {
+		color.Set(color.FgHiRed)
+		fmt.Print("\n", usr.Username)
+		color.Set(color.FgHiCyan)
+		fmt.Print(" TRC ")
+		color.Set(color.FgWhite)
+		fmt.Print(path, "\r\n")
+		fmt.Print(">")
+
+		reader := bufio.NewReader(os.Stdin)
+		data, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+		}
+		dataXi := strings.Fields(data)
+		os.Args = os.Args[:0]
+		for _, val := range dataXi {
+			os.Args = append(os.Args, val)
+		}
+		f.initFlag()
+		flag.Parse()
+		analyseCommand(trcCmd, f)
+	}
 }
 
 func main() {
-	flag.Parse()
-	downloadVideoCommand := flag.NewFlagSet("download video", flag.ExitOnError)
-	setDownloadVideoFlag(downloadVideoCommand)
-	splitScoreAlertCommand := flag.NewFlagSet("split scoreAlert", flag.ExitOnError)
-	setSplitScoreAlertFlag(splitScoreAlertCommand)
-	mergeVideoCommand := flag.NewFlagSet("merge video", flag.ExitOnError)
-	setMergeVideoFlag(mergeVideoCommand)
+	var f flags
+	f.initFlag()
 
-	if len(os.Args) == 1 || help {
-		flag.Usage()
-		return
-	}
+	var trcCmd commandSet
+	trcCmd.commandSet()
+	trcCmd.setLyr1Command("download", "下載檔案(教師資料、數位課綱連結)")
+	trcCmd.setLyr2Command("download", "video", "下載數位課綱影片連結", f.downloadVideoFlagSet)
+	trcCmd.setLyr2Command("download", "teacher", "下載教師資料", nil)
+	trcCmd.setLyr1Command("split", "分割檔案(分割預警總表)")
+	trcCmd.setLyr2Command("split", "scoreAlert", "分割預警總表", f.splitScoreAlertFlagSet)
+	trcCmd.setLyr1Command("merge", "合併檔案(合併數位課綱資料、開課及製版數登記表)")
+	trcCmd.setLyr2Command("merge", "video", "依教師合併數位課綱影片問題", f.mergeVideoFlagSet)
+	trcCmd.setLyr2Command("merge", "course", "依教師合併開課總表，製作為製版數登記表", f.mergeCourseFlagSet)
+	trcCmd.setLyr1Command("calculate", "計算檔案(計算成績差分)")
+	trcCmd.setLyr2Command("calculate", "difference", "計算成績差分", f.calcDifferentFlagSet)
 
-	switch os.Args[1] {
-	case "download":
+	selectMode(&trcCmd, &f)
 
-		downloadUsage := func() {
-			fmt.Println("Usage: trc download <command> [<args>]")
-			fmt.Println()
-			fmt.Println("Commands:")
-			// fmt.Println("  video [<args>]\n        下載數位課綱影片連結")
-			fmt.Println("  video [<args>]\t下載數位課綱影片連結")
-			for key, value := range downloadVideoCommand.GetFlags() {
-				fmt.Println("        -" + key + " " + value.Usage)
-			}
-			// fmt.Println("  teacher [<args>]\n        下載教師資料")
-			fmt.Println("  teacher [<args>]\t下載教師資料")
-		}
+	//合併數位課綱
+	// var inputFile svFile
+	// var outputFile file
 
-		if len(os.Args) <= 2 {
-			downloadUsage()
-			return
-		}
+	// inputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "108-1期中預警總表.xlsx", "工作表")
+	// outputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "export.xlsx", "工作表")
+	// inputFile.MergeSyllabusVideoData(outputFile)
 
-		if len(os.Args) >= 2 {
-			switch os.Args[2] {
-			case "video":
-				err := downloadVideoCommand.Parse(os.Args[3:])
-				if err != nil {
-					log.Println(err)
-				}
+	// var inputFile rpFile
+	// var outputFile file
+	// inputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "108-2開課資料.xlsx", "工作表")
+	// outputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "export.xlsx", "工作表")
+	// inputFile.MergeRapidPrintData(outputFile)
 
-				fmt.Println(">> GetSyllabusVideoLink")
-				getSyllabusVideo()
-			case "teacher":
-				fmt.Println(">> GetTeacherData")
-				getTeacher()
-			default:
-				downloadUsage()
-				return
-			}
-		}
+	// var inputFile dcFile
+	// var outputFile file
+	// inputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "1081108生態組 評量尺規成績輸入表.xlsx", "學系彙整版")
+	// outputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "export.xlsx", "工作表")
+	// inputFile.DifferenceCalculation(outputFile)
 
-	case "split":
+	// allFiles, err := ioutil.ReadDir("./")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-		splitUsage := func() {
-			fmt.Println("Usage: trc split <command> [<args>]")
-			fmt.Println()
-			fmt.Println("Commands:")
-			// fmt.Println("  scoreAlert [<args>]\n        分割預警總表")
-			fmt.Println("  scoreAlert [<args>]\t分割預警總表")
-			for key, value := range splitScoreAlertCommand.GetFlags() {
-				fmt.Println("        -" + key + " " + value.Usage)
-			}
-		}
-
-		if len(os.Args) <= 2 {
-			splitUsage()
-			return
-		}
-
-		if len(os.Args) >= 2 {
-			switch os.Args[2] {
-			case "scoreAlert":
-				err := splitScoreAlertCommand.Parse(os.Args[3:])
-				if err != nil {
-					log.Println(err)
-				}
-
-				fmt.Println(">> SplitScoreAlertFile")
-				splitScoreAlertFile()
-			default:
-				splitUsage()
-				return
-			}
-		}
-	case "merge":
-		mergeUsage := func() {
-			fmt.Println("Usage: trc merge <command> [<args>]")
-			fmt.Println()
-			fmt.Println("Commands:")
-			fmt.Println("  video [<args>]\t依教師合併數位課綱影片問題")
-			for key, value := range mergeVideoCommand.GetFlags() {
-				fmt.Println("        -" + key + " " + value.Usage)
-			}
-		}
-
-		if len(os.Args) <= 2 {
-			mergeUsage()
-			return
-		}
-
-		if len(os.Args) >= 2 {
-			switch os.Args[2] {
-			case "video":
-				err := mergeVideoCommand.Parse(os.Args[3:])
-				if err != nil {
-					log.Println(err)
-				}
-
-				fmt.Println(">> MergeSyllabusVideoLink")
-				mergeSyllabusVideo()
-			default:
-				mergeUsage()
-				return
-			}
-		}
-	default:
-		fmt.Printf("%q is not a valid command.\n", os.Args[1])
-		os.Exit(2)
-	}
-
+	// for _, f := range allFiles {
+	// 	match, _ := regexp.MatchString(`\.xlsx`, f.Name())
+	// 	if match {
+	// 		var inputFile dcFile
+	// 		var outputFile file
+	// 		inputFile.setFile("./", f.Name(), "學系彙整版")
+	// 		outputFile.setFile("./", "difference-"+f.Name(), "工作表")
+	// 		inputFile.DifferenceCalculation(outputFile)
+	// 	}
+	// }
 }

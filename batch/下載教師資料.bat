@@ -1,1 +1,0 @@
-..\bin\trc.exe download -teacher

@@ -1,378 +1,215 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"net/url"
-	"os"
 	"sort"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/Luxurioust/excelize"
-	"golang.org/x/net/html"
 )
 
-type searchRequest struct {
-	smye     string //academicYear
-	smty     string //semester
-	day      string
-	lesson   string
-	htmlNode *html.Node
-}
-
-type course struct {
-	courseXi []courseDetail
-}
-
-type courseDetail struct {
-	year                string //學年度
-	semester            string //學期
-	system              string //學制
-	college             string //開課學院
-	department          string //開課系所
-	gradeNClass         string //年-班
-	creditNChooseSelect string //學分-必選別
-	courseID            string //課程序號
-	courseName          string //課程名稱
-	teacher             string //授課教師
-	courseInfo          string //上課時間/地點
-	remark              string //備註
-	courseURL           string //數位課綱連結
-	videoProblem        string //數位課綱影片問題
-}
-
-type merge struct {
-	departmentColumnNum   int //開課系所欄位編號
-	teacherColumnNum      int //授課教師欄位編號
-	courseIDColumnNum     int //課程序號欄位編號
-	courseNameColumnNum   int //課程名稱欄位編號
-	videoProblemColumnNum int //影片問題欄位編號
-	teacherMap            map[string][]mergeDetail
-	syllabusVideoRows     [][]string
-	courseXi              []courseDetail
-}
-
-type mergeDetail struct {
-	teacher      string //授課教師
-	department   string //開課系所
-	courseID     string //課程序號
-	courseName   string //課程名稱
-	videoProblem string //數位課綱影片問題
-}
-
-//searchRequest的建構函式
-func newCourseList() *searchRequest {
-	return &searchRequest{
-		smye:   academicYear,
-		smty:   semester,
-		day:    "'1','2','3','4','5','6','7'",
-		lesson: "'1','2','3','4','N','5','6','7','8','9','A','B','C','D','E'",
-	}
-}
-
-//設定學年度
-func (sr *searchRequest) setAcademicYear(year string) {
-	i, err := strconv.Atoi(year)
-	if err != nil || i < 0 {
-		fmt.Println("請輸入合法的年分!")
-		panic("Download Fail")
-	} else {
-		sr.smye = year
-	}
-}
-
-//設定學期
-func (sr *searchRequest) setSemester(semester string) {
-	i, err := strconv.Atoi(semester)
-	if err != nil || i < 0 || i > 2 {
-		fmt.Println("請輸入合法的學期!")
-		panic("Download Fail")
-	} else {
-		sr.smty = semester
-	}
-}
-
-//設定查詢星期
-func (sr *searchRequest) setDay(day string) {
-	sr.day = day
-}
-
-//設定查詢節次
-func (sr *searchRequest) setLesson(lesson string) {
-	sr.lesson = lesson
-}
-
-//發送查詢請求並儲存返回結果
-func (sr *searchRequest) getCourseData() {
-	v := url.Values{}
-	//post form data
-	v.Add("smye", sr.smye)
-	v.Add("smty", sr.smty)
-	v.Add("str_time", sr.day+"sec"+sr.lesson)
-
-	//送出請求並將返回結果放入res
-	res, err := http.Post("http://syl.dyu.edu.tw/sl_cour_time.php?itimestamp="+string(int32(time.Now().Unix())), "application/x-www-form-urlencoded", bytes.NewBufferString(v.Encode()))
+//MergeSyllabusVideoData 合併數位課綱資料
+func (svf *svFile) MergeSyllabusVideoData(outputFile file) (err error) {
+	err = svf.readRawData()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	defer res.Body.Close()
-
-	//取得res的body並放入sitemap
-	sitemap, err := ioutil.ReadAll(res.Body)
+	err = svf.groupByTeacher()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	doc, err := html.Parse(strings.NewReader(string(sitemap)))
+	err = svf.transportToSlice()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-
-	sr.htmlNode = doc
-}
-
-//分析searchRequest裡面的htmlNode，將各欄位對應到courseDetail中，並儲存在course裡的courseXi中
-func (course *course) find(n *html.Node) {
-	var detail courseDetail
-	if n.Type == html.ElementNode && n.Data == "div" {
-		for _, a := range n.Attr {
-			if a.Key == "class" && a.Val == "row" {
-				count := 0
-				for child := n.FirstChild; child != nil; child = child.NextSibling {
-					for _, a1 := range child.Attr {
-						if a1.Key == "class" && a1.Val == "td1" {
-							detail.gradeNClass = child.FirstChild.Data
-							break
-						}
-						if a1.Key == "class" && a1.Val == "td2" {
-							detail.creditNChooseSelect = child.FirstChild.Data
-							break
-						}
-						if a1.Key == "class" && a1.Val == "td3" {
-							detail.courseID = child.FirstChild.Data
-							break
-						}
-						if a1.Key == "class" && a1.Val == "td4" {
-							detail.courseName = child.FirstChild.Data
-							break
-						}
-						if a1.Key == "class" && a1.Val == "td5" {
-							detail.teacher = child.FirstChild.Data
-							break
-						}
-						if a1.Key == "class" && a1.Val == "td7" {
-							detail.courseInfo = child.FirstChild.Data
-							break
-						}
-						if a1.Key == "class" && a1.Val == "td8" {
-							detail.remark = child.FirstChild.Data
-							break
-						}
-						if a1.Key == "class" && a1.Val == "td9" {
-							for _, a2 := range child.LastChild.Attr {
-								if a2.Key == "href" {
-									detail.courseURL = a2.Val
-									break
-								}
-							}
-
-						}
-					}
-					count++
-				}
-				course.courseXi = append(course.courseXi, detail)
-			}
-		}
-	}
-
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		course.find(c)
-	}
-}
-
-//輸出所有courseXi中的資料
-func (course *course) print() {
-	for _, value := range course.courseXi {
-		fmt.Println(value.courseID, value.courseName, value.courseURL)
-	}
-}
-
-//輸出到Excel檔案
-func (course *course) exportToExcel(sheetName string) {
-	if sheetName == "數位課綱" {
-		sheetName = academicYear + semester + "數位課綱"
-	}
-
-	xlsx := excelize.NewFile()
-	xlsx.SetSheetName("Sheet1", sheetName)
-	xlsx.SetSheetRow(sheetName, "A1", &[]interface{}{"年-班", "學分數/必選別", "科目序號", "科目名稱", "授課教師", "上課時間/地點", "備註", "數位課綱URL"})
-	style, err := xlsx.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
+	err = svf.exportDataToExcel(outputFile)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
-	xlsx.SetColStyle(sheetName, "H", style)
-	for index, element := range course.courseXi {
-		strIndex := strconv.Itoa(index + 2)
-		strIndex = "A" + strIndex
-		urlIndex := "H" + strIndex
-		if element.courseID != "" {
-			xlsx.SetCellHyperLink(sheetName, urlIndex, element.courseURL, "External")
-			err = xlsx.SetCellStyle(sheetName, urlIndex, urlIndex, style)
-			if err != nil {
-				fmt.Println(err)
-			}
-			xlsx.SetSheetRow(sheetName, strIndex, &[]interface{}{element.gradeNClass, element.creditNChooseSelect, element.courseID, element.courseName, element.teacher, element.courseInfo, element.remark, element.courseURL})
-		}
-	}
-
-	// Save xlsx file by the given path.
-	err = xlsx.SaveAs(sheetName + ".xlsx")
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-
-//讀入數位課綱資料
-func (m *merge) loadSyllabusVideoList() error {
-	videoListXlsx, err := excelize.OpenFile(inputFilePath)
-	if err != nil {
-		fmt.Println("\rERROR:", err)
-		os.Exit(2)
-	}
-	videoListXlsxSheetName := "工作表"
-	m.syllabusVideoRows, err = videoListXlsx.GetRows(videoListXlsxSheetName)
-	if err != nil {
-		fmt.Println("\rERROR:找不到\"數位課綱\"檔案內的\"工作表\"")
-		os.Exit(2)
-	}
-	// fmt.Println(syllabusVideoRows[0])
-	for index, value := range m.syllabusVideoRows[0] {
-		switch value {
-		case "開課系所":
-			if m.departmentColumnNum == 0 {
-				m.departmentColumnNum = index
-			}
-		case "教師姓名":
-			if m.teacherColumnNum == 0 {
-				m.teacherColumnNum = index
-			}
-		case "科目序號":
-			if m.courseIDColumnNum == 0 {
-				m.courseIDColumnNum = index
-			}
-		case "科目名稱":
-			if m.courseNameColumnNum == 0 {
-				m.courseNameColumnNum = index
-			}
-		case "影片問題":
-			if m.videoProblemColumnNum == 0 {
-				m.videoProblemColumnNum = index
-			}
-		}
-	}
-	// fmt.Println(m.departmentColumnNum, m.teacherColumnNum, m.courseIDColumnNum, m.courseNameColumnNum, m.videoProblemColumnNum)
 	return nil
 }
 
-//依教師合併科目
-func (m *merge) mergeSyllabusVideoList() error {
-	m.teacherMap = make(map[string][]mergeDetail)
-	for _, value := range m.syllabusVideoRows {
+//groupByTeacher 依照教師名稱將數位課綱資料分群
+func (svf *svFile) groupByTeacher() (err error) {
+	err = svf.findCol("教師姓名", &svf.cthCol)
+	if err != nil {
+		return err
+	}
+	err = svf.findCol("開課系所", &svf.depCol)
+	if err != nil {
+		return err
+	}
+	err = svf.findCol("科目序號", &svf.cidCol)
+	if err != nil {
+		return err
+	}
+	err = svf.findCol("科目名稱", &svf.csnCol)
+	if err != nil {
+		return err
+	}
+	err = svf.findCol("影片問題", &svf.pocCol)
+	if err != nil {
+		return err
+	}
+
+	svf.gbtd = make(map[teacher][]syllabusVideo)
+	if len(svf.dataRows) <= 0 {
+		return fmt.Errorf("dataRows has no data")
+	}
+	for index, value := range svf.dataRows {
+
+		//跳過第零行標題列
+		if index == 0 {
+			continue
+		}
 
 		//尋找影片問題欄位有資料者
-		if len(value) >= m.videoProblemColumnNum && value[m.videoProblemColumnNum] != "" {
-			md := mergeDetail{
-				teacher:      value[m.teacherColumnNum],
-				department:   value[m.departmentColumnNum],
-				courseID:     value[m.courseIDColumnNum],
-				courseName:   value[m.courseNameColumnNum],
-				videoProblem: value[m.videoProblemColumnNum],
+		if len(value) >= len(svf.firstRow) && value[svf.pocCol] != "" {
+			t := teacher{
+				teacherName: value[svf.cthCol],
 			}
-			if value[m.teacherColumnNum] == "教師姓名" {
-				continue //讀取到標題列略過該迴圈
+			c := syllabusVideo{
+				course: course{
+					department: department{
+						departmentName: value[svf.depCol],
+					},
+					courseID:   value[svf.cidCol],
+					courseName: value[svf.csnCol],
+				},
+				problemOfCourse: value[svf.pocCol],
 			}
-			m.teacherMap[value[m.teacherColumnNum]] = append(m.teacherMap[value[m.teacherColumnNum]], md)
+			svf.gbtd[t] = append(svf.gbtd[t], c)
 		}
 	}
-
 	return nil
 }
 
-//輸出合併後的Excel檔案
-func (m *merge) exportMergedCourseDataToExcel(fileName string) error {
-	xlsx := excelize.NewFile()
-	sheetName := "工作表"
-	xlsx.SetSheetName("Sheet1", sheetName)
+//transportToSlice 將map[teacher][]syllabusVideo的資料轉換為二維陣列
+func (svf *svFile) transportToSlice() (err error) {
+	if len(svf.dataRows) <= 0 {
+		return fmt.Errorf("gbtd has no data")
+	}
+	for key, value := range svf.gbtd {
+		tempXi := make([]string, 0)
+		tempXi = append(tempXi, key.teacherName)
 
-	var column int
-	var mark string //當超過Z時會變成AA，超過AZ會變成BA，此變數標記目前標記為何
+		coutCourseNum := 0 //計算每位老師的科目數量
+
+		for _, array := range value {
+			tempXi = append(tempXi, array.departmentName, array.courseID, array.courseName, array.problemOfCourse)
+			coutCourseNum++
+		}
+
+		//若目前老師的科目數量大於最大數量，將其設為最大數量
+		if coutCourseNum > svf.maxCourseNum {
+			svf.maxCourseNum = coutCourseNum
+		}
+
+		svf.mergedXi = append(svf.mergedXi, tempXi)
+	}
+	return nil
+}
+
+//exportDataToExcel 將資料匯出至xlsx檔案
+func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
+	xlsx := excelize.NewFile()
+	// sheetName := "工作表"
+	xlsx.SetSheetName("Sheet1", outputFile.sheetName)
 
 	//更改工作表網底
-	// fillColor1E3048, _ := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#1E3048"],"pattern":1},"font":{"color":"#FFFFFF"}}`)
-	fillColorEBF0F3, _ := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#EBF0F3"],"pattern":1}}`)
-	fillColorCCDBE2, _ := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#CCDBE2"],"pattern":1}}`)
-	fillColor658FA7, _ := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#658FA7"],"pattern":1}}`)
-
-	for i := 67; i < 148; {
-		if i < 91 {
-			mark = ""
-		} else if i < 117 {
-			mark = "A"
-		} else if i < 143 {
-			mark = "B"
-		} else if i < 169 {
-			mark = "C"
-		}
-		xlsx.SetColStyle(sheetName, mark+string(i), fillColorEBF0F3)
-		xlsx.SetColStyle(sheetName, mark+string(i+1), fillColorCCDBE2)
-		xlsx.SetColStyle(sheetName, mark+string(i+2), fillColor658FA7)
-		i = i + 3
+	var mark string //當超過Z時會變成AA，超過AZ會變成BA，此變數標記目前標記為何
+	fillColorEFECD7, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#EFECD7"],"pattern":1}}`)
+	if err != nil {
+		return err
+	}
+	fillColorE9E7D6, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#E9E7D6"],"pattern":1}}`)
+	if err != nil {
+		return err
+	}
+	fillColorE0E4D6, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#E0E4D6"],"pattern":1}}`)
+	if err != nil {
+		return err
+	}
+	fillColorDADCD2, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#DADCD2"],"pattern":1}}`)
+	if err != nil {
+		return err
 	}
 
-	xlsx.SetSheetRow(sheetName, "A1", &[]interface{}{"授課教師", "開課系所", "科目序號1", "科目名稱1", "影片問題1", "科目序號2", "科目名稱2", "影片問題2", "科目序號3", "科目名稱3", "影片問題3", "科目序號4", "科目名稱4", "影片問題4", "科目序號5", "科目名稱5", "影片問題5", "科目序號6", "科目名稱6", "影片問題6", "科目序號7", "科目名稱7", "影片問題7", "科目序號8", "科目名稱8", "影片問題8", "科目序號9", "科目名稱9", "影片問題9", "科目序號10", "科目名稱10", "影片問題10"})
+	for i := 66; i < 66+svf.maxCourseNum*4; i++ {
+		if i < 91 {
+			mark = string(i)
+		} else if i < 117 {
+			mark = "A" + string(i-26)
+		} else if i < 143 {
+			mark = "B" + string(i-26*2)
+		} else if i < 169 {
+			mark = "C" + string(i-26*3)
+		}
 
-	keys := make([]string, 0, len(m.teacherMap))
-	for k := range m.teacherMap {
-		keys = append(keys, k)
+		switch i % 4 {
+		case 2:
+			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorEFECD7)
+			if err != nil {
+				return err
+			}
+		case 3:
+			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorE9E7D6)
+			if err != nil {
+				return err
+			}
+		case 0:
+			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorE0E4D6)
+			if err != nil {
+				return err
+			}
+		case 1:
+			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorDADCD2)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	//設定第一列
+	title := make([]string, 0)
+	title = append(title, "授課教師")
+	for i := 0; i < svf.maxCourseNum; i++ {
+		title = append(title, "開課系所", "科目序號", "科目名稱", "影片問題")
+	}
+	err = xlsx.SetSheetRow(outputFile.sheetName, "A1", &title)
+	if err != nil {
+		return err
+	}
+
+	//依照unicode排序gptd map
+	keys := make([]string, 0, len(svf.gbtd))
+	if len(svf.gbtd) <= 0 {
+		return fmt.Errorf("gbtd has no data")
+	}
+	for k := range svf.gbtd {
+		keys = append(keys, k.teacherName)
 	}
 	sort.Strings(keys)
 
-	row := 2 //Row 2
-	for _, key := range keys {
-		column = 65 //Column A
-		mark = ""
-		for cindex, celement := range m.teacherMap[key] {
-			if cindex == 0 {
-				xlsx.SetCellValue(sheetName, string(column)+strconv.Itoa(row), celement.teacher)
-				column++
-				xlsx.SetCellValue(sheetName, string(column)+strconv.Itoa(row), celement.department)
-				column++
-			}
-			if column < 90 {
-				mark = ""
-			} else if column < 116 {
-				mark = "A"
-			} else if column < 142 {
-				mark = "B"
-			}
-			xlsx.SetCellValue(sheetName, mark+string(column)+strconv.Itoa(row), celement.courseID)
-			column++
-			xlsx.SetCellValue(sheetName, mark+string(column)+strconv.Itoa(row), celement.courseName)
-			column++
-			xlsx.SetCellValue(sheetName, mark+string(column)+strconv.Itoa(row), celement.videoProblem)
-			column++
+	//將svf.mergedXi資料加入到xlsx內
+	if len(svf.mergedXi) <= 0 {
+		return fmt.Errorf("mergedXi has no data")
+	}
+	for index, value := range svf.mergedXi {
+		row := strconv.Itoa(index + 2)
+		position := "A" + row
+
+		err = xlsx.SetSheetRow(outputFile.sheetName, position, &value)
+		if err != nil {
+			return err
 		}
-		row++
 	}
 
-	// Save xlsx file by the given path.
-	err := xlsx.SaveAs(fileName + ".xlsx")
+	//使用路徑及檔名匯出檔案
+	err = xlsx.SaveAs(outputFile.filePath + outputFile.fileName)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("\rError: 無法將檔案\"" + outputFile.fileName + "\"儲存在\"" + outputFile.filePath + "\"目錄內")
+		return err
 	}
 	return nil
 }

@@ -1,0 +1,106 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"time"
+)
+
+func (f *flags) initFlag() {
+	helpFlag := flag.Lookup("help")
+	if helpFlag == nil {
+		flag.BoolVar(&f.help, "help", false, "Usage")
+	}
+
+	f.downloadVideoFlagSet = flag.NewFlagSet("download video", flag.ExitOnError)
+	f.setDownloadVideoFlag()
+	f.splitScoreAlertFlagSet = flag.NewFlagSet("split scoreAlert", flag.ExitOnError)
+	f.setSplitScoreAlertFlag()
+	f.mergeVideoFlagSet = flag.NewFlagSet("merge video", flag.ExitOnError)
+	f.setMergeVideoFlag()
+	f.mergeCourseFlagSet = flag.NewFlagSet("merge course", flag.ExitOnError)
+	f.setMergeCourseFlag()
+	f.calcDifferentFlagSet = flag.NewFlagSet("calculate different", flag.ExitOnError)
+	f.setCalcDifferentFlag()
+}
+
+func (f *flags) setDownloadVideoFlag() {
+	//set default video parameter
+	defaultAcademicYear := ""
+	defaultSemester := ""
+	if time.Now().Month() <= 7 {
+		defaultAcademicYear = strconv.Itoa(time.Now().Year() - 1911 - 1)
+		defaultSemester = "2"
+	} else {
+		defaultAcademicYear = strconv.Itoa(time.Now().Year() - 1911)
+		defaultSemester = "1"
+	}
+	f.downloadVideoFlagSet.StringVar(&f.academicYear, "year", defaultAcademicYear, "設定學年度，預設為當前學年度")
+	f.downloadVideoFlagSet.StringVar(&f.semester, "semester", defaultSemester, "設定學期，預設為當前學期")
+	f.downloadVideoFlagSet.StringVar(&f.outputFileName, "filename", "數位課綱", "設定檔名，預設為查詢目標學年+學期+數位課綱")
+	f.downloadVideoFlagSet.BoolVar(&f.help, "help", false, "Usage")
+}
+
+func (f *flags) setSplitScoreAlertFlag() (err error) {
+	path, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	f.scoreAlertFile = make([]string, 3)
+	f.teacherInfoFile = make([]string, 3)
+	f.exportTemplateFile = make([]string, 3)
+	f.splitScoreAlertFlagSet.StringVar(&f.scoreAlertFile[0], "masterPath", path+"\\", "設定預警總表檔案路徑")
+	f.splitScoreAlertFlagSet.StringVar(&f.scoreAlertFile[1], "masterName", "預警總表.xlsx", "設定預警總表檔案名稱")
+	f.splitScoreAlertFlagSet.StringVar(&f.scoreAlertFile[2], "masterSheet", "工作表", "設定預警總表工作表名稱")
+	f.splitScoreAlertFlagSet.StringVar(&f.teacherInfoFile[0], "teacherPath", path+"\\", "設定教師名單檔案路徑")
+	f.splitScoreAlertFlagSet.StringVar(&f.teacherInfoFile[1], "teacherName", "教師名單.xlsx", "設定教師名單檔案名稱")
+	f.splitScoreAlertFlagSet.StringVar(&f.teacherInfoFile[2], "teacherSheet", "工作表", "設定教師名單工作表名稱")
+	f.splitScoreAlertFlagSet.StringVar(&f.exportTemplateFile[0], "templatePath", path+"\\", "設定空白分表檔案名稱")
+	f.splitScoreAlertFlagSet.StringVar(&f.exportTemplateFile[1], "templateName", "空白.xlsx", "設定空白分表檔案名稱")
+	f.splitScoreAlertFlagSet.StringVar(&f.exportTemplateFile[2], "templateSheet", "工作表", "設定空白分表檔案名稱")
+	f.splitScoreAlertFlagSet.BoolVar(&f.help, "help", false, "Usage")
+	return nil
+}
+
+func (f *flags) setMergeVideoFlag() {
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	f.svInputFile = make([]string, 3)
+	f.svOutputFile = make([]string, 3)
+	f.mergeVideoFlagSet.StringVar(&f.svInputFile[0], "inPath", path+"\\", "輸入檔案路徑")
+	f.mergeVideoFlagSet.StringVar(&f.svInputFile[1], "inName", "數位課綱.xlsx", "輸入檔案名稱")
+	f.mergeVideoFlagSet.StringVar(&f.svInputFile[2], "inSheet", "工作表", "輸入工作表名稱")
+	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[0], "outPath", path+"\\", "輸出檔案路徑")
+	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[1], "outName", "數位課綱(已合併).xlsx", "輸出檔案名稱")
+	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[2], "outSheet", "工作表", "輸出工作表名稱")
+	f.mergeVideoFlagSet.BoolVar(&f.help, "help", false, "Usage")
+}
+
+func (f *flags) setMergeCourseFlag() {
+	f.mergeCourseFlagSet.StringVar(&f.inputFilePath, "input", "開課總表", "設定欲合併的開課總表檔案路徑名稱")
+	f.mergeCourseFlagSet.StringVar(&f.outputFilePath, "output", "開課總表(已合併)", "設定合併後輸出的檔案名稱")
+	f.mergeCourseFlagSet.BoolVar(&f.help, "help", false, "Usage")
+}
+
+func (f *flags) setCalcDifferentFlag() {
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+
+	f.calcDifferentFlagSet.StringVar(&f.inputFilePath, "inPath", path+"\\", "輸入檔案路徑")
+	f.calcDifferentFlagSet.StringVar(&f.inputFileName, "inName", "評分表.xlsx", "輸入檔案名稱")
+	f.calcDifferentFlagSet.StringVar(&f.inputSheetName, "inSheet", "學系彙整版", "輸入工作表名稱")
+	f.calcDifferentFlagSet.StringVar(&f.outputFilePath, "outPath", path+"\\", "輸出檔案路徑")
+	f.calcDifferentFlagSet.StringVar(&f.outputFileName, "outName", "成績差分.xlsx", "輸出檔案名稱")
+	f.calcDifferentFlagSet.StringVar(&f.outputSheetName, "outSheet", "工作表", "輸出工作表名稱")
+	f.calcDifferentFlagSet.BoolVar(&f.readAllFilesInDir, "A", false, "讀取目錄內所有檔案")
+	f.calcDifferentFlagSet.BoolVar(&f.help, "help", false, "Usage")
+
+}
