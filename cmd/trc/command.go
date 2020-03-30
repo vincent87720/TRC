@@ -422,7 +422,7 @@ func mergeSyllabusVideo(f *flags) (err error) {
 	var outputFile file
 
 	inputFile.setFile(f.svInputFile[0], f.svInputFile[1], f.svInputFile[2])
-	outputFile.setFile(f.svOutputFile[0], "[MERGENCE]"+f.svInputFile[1], f.svOutputFile[2])
+	outputFile.setFile(f.svOutputFile[0], f.svOutputFile[1], f.svOutputFile[2])
 
 	quit := make(chan int)
 	defer close(quit)
@@ -467,7 +467,7 @@ func mergeCourseData(f *flags) (err error) {
 	var inputFile rpFile
 	var outputFile file
 	inputFile.setFile(f.cdInputFile[0], f.cdInputFile[1], f.cdInputFile[2])
-	outputFile.setFile(f.cdOutputFile[0], "[MERGENCE]"+f.cdInputFile[1], f.cdOutputFile[2])
+	outputFile.setFile(f.cdOutputFile[0], f.cdOutputFile[1], f.cdOutputFile[2])
 
 	quit := make(chan int)
 	defer close(quit)

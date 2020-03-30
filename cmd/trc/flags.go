@@ -77,14 +77,24 @@ func (f *flags) setMergeVideoFlag() {
 	f.mergeVideoFlagSet.StringVar(&f.svInputFile[1], "inName", "數位課綱.xlsx", "輸入檔案名稱")
 	f.mergeVideoFlagSet.StringVar(&f.svInputFile[2], "inSheet", "工作表", "輸入工作表名稱")
 	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[0], "outPath", path+"\\", "輸出檔案路徑")
-	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[1], "outName", "數位課綱(已合併).xlsx", "輸出檔案名稱")
+	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[1], "outName", "[MERGENCE]數位課綱.xlsx", "輸出檔案名稱")
 	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[2], "outSheet", "工作表", "輸出工作表名稱")
 	f.mergeVideoFlagSet.BoolVar(&f.help, "help", false, "Usage")
 }
 
 func (f *flags) setMergeCourseFlag() {
-	f.mergeCourseFlagSet.StringVar(&f.inputFilePath, "input", "開課總表", "設定欲合併的開課總表檔案路徑名稱")
-	f.mergeCourseFlagSet.StringVar(&f.outputFilePath, "output", "開課總表(已合併)", "設定合併後輸出的檔案名稱")
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	f.cdInputFile = make([]string, 3)
+	f.cdOutputFile = make([]string, 3)
+	f.mergeCourseFlagSet.StringVar(&f.cdInputFile[0], "inPath", path+"\\", "輸入檔案路徑")
+	f.mergeCourseFlagSet.StringVar(&f.cdInputFile[1], "inName", "開課總表.xlsx", "輸入檔案名稱")
+	f.mergeCourseFlagSet.StringVar(&f.cdInputFile[2], "inSheet", "工作表", "輸入工作表名稱")
+	f.mergeCourseFlagSet.StringVar(&f.cdOutputFile[0], "outPath", path+"\\", "輸出檔案路徑")
+	f.mergeCourseFlagSet.StringVar(&f.cdOutputFile[1], "outName", "[MERGENCE]開課總表.xlsx", "輸出檔案名稱")
+	f.mergeCourseFlagSet.StringVar(&f.cdOutputFile[2], "outSheet", "工作表", "輸出工作表名稱")
 	f.mergeCourseFlagSet.BoolVar(&f.help, "help", false, "Usage")
 }
 
