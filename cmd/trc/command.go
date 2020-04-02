@@ -303,7 +303,7 @@ func getTeacher() (err error) {
 		quit <- 1
 		return err
 	}
-	cudreq.setURL("https://lg.dyu.edu.tw/APP/getFile.php?URL=http://lg.dyu.edu.tw/search_unit.php")
+	cudreq.setURL("http://lg.dyu.edu.tw/search_unit.php")
 	err = cudreq.sendRequest()
 	if err != nil {
 		quit <- 1
