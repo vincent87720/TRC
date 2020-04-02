@@ -89,7 +89,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 				case "video":
 					err := f.downloadVideoFlagSet.Parse(os.Args[3:])
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 					}
 
 					if f.help == true {
@@ -103,7 +103,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					fmt.Println(">> GetTeacherData")
 					err := getTeacher()
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 						fmt.Println("\r> Downloading have failed")
 					}
 				default:
@@ -120,7 +120,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 				case "scoreAlert":
 					err := f.splitScoreAlertFlagSet.Parse(os.Args[3:])
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 					}
 					if f.help {
 						f.splitScoreAlertFlagSet.Usage()
@@ -130,7 +130,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					fmt.Println(">> SplitScoreAlertFile")
 					err = splitScoreAlertFile(f)
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 						fmt.Println("\r> Splitting have failed")
 					}
 
@@ -148,7 +148,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 				case "video":
 					err := f.mergeVideoFlagSet.Parse(os.Args[3:])
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 					}
 					if f.help {
 						f.mergeVideoFlagSet.Usage()
@@ -158,13 +158,13 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					fmt.Println(">> MergeSyllabusVideoLink")
 					err = mergeSyllabusVideo(f)
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 						fmt.Println("\r> Merging have failed")
 					}
 				case "course":
 					err := f.mergeCourseFlagSet.Parse(os.Args[3:])
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 					}
 					if f.help {
 						f.mergeCourseFlagSet.Usage()
@@ -174,7 +174,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					fmt.Println(">> MergeCourseData")
 					err = mergeCourseData(f)
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 						fmt.Println("\r> Merging have failed")
 					}
 				default:
@@ -192,7 +192,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					err := f.calcDifferentFlagSet.Parse(os.Args[3:])
 
 					if err != nil {
-						logging.Error.Println(err)
+						logging.Error.Printf("%+v\n", err)
 					}
 					if f.help {
 						f.calcDifferentFlagSet.Usage()
@@ -204,13 +204,13 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					if f.readAllFilesInDir {
 						err := calcDifferenceAllFile(f)
 						if err != nil {
-							logging.Error.Println(err)
+							logging.Error.Printf("%+v\n", err)
 							fmt.Println("\r> Calculating have failed")
 						}
 					} else {
 						err := calcDifference(f)
 						if err != nil {
-							logging.Error.Println(err)
+							logging.Error.Printf("%+v\n", err)
 							fmt.Println("\r> Calculating have failed")
 						}
 					}
@@ -291,21 +291,6 @@ func getTeacher() (err error) {
 	quit := make(chan int)
 	defer close(quit)
 
-	go spinner("Teacher data is downloading...", 80*time.Millisecond, quit)
-	tdreq.setURL("https://lg.dyu.edu.tw/search_teacher.php")
-	err = tdreq.sendRequest()
-	if err != nil {
-		quit <- 1
-		return err
-	}
-	err = tdreq.parseData()
-	if err != nil {
-		quit <- 1
-		return err
-	}
-	quit <- 1
-	fmt.Println("\r> Downloading teacher data have completed")
-
 	go spinner("Unit data is downloading...", 80*time.Millisecond, quit)
 	udreq.setURL("https://lg.dyu.edu.tw/get_unit_title.php")
 	err = udreq.sendRequest()
@@ -331,6 +316,21 @@ func getTeacher() (err error) {
 	}
 	quit <- 1
 	fmt.Println("\r> Downloading unit data have completed")
+
+	go spinner("Teacher data is downloading...", 80*time.Millisecond, quit)
+	tdreq.setURL("https://lg.dyu.edu.tw/search_teacher.php")
+	err = tdreq.sendRequest()
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	err = tdreq.parseData()
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	quit <- 1
+	fmt.Println("\r> Downloading teacher data have completed")
 
 	go spinner("Files are exporting...", 80*time.Millisecond, quit)
 	err = inputFile.transportToSlice(&tdreq, &udreq, &cudreq)

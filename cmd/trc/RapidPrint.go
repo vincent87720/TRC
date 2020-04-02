@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type rapidPrintXi []rapidPrint
@@ -118,20 +120,24 @@ func (rpf *rpFile) groupByTeacher() (err error) {
 
 	r1, err := regexp.Compile(`\(.*?\s`)
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 	r2, err := regexp.Compile(`\(.*?\-`)
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 	r3, err := regexp.Compile(`[A-Z].*`)
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 
 	rpf.gbtd = make(map[teacher][]rapidPrint)
 	if len(rpf.dataRows) <= 0 {
-		return fmt.Errorf("dataRows has no data")
+		err = errors.WithStack(fmt.Errorf("dataRows has no data"))
+		return err
 	}
 	for index, value := range rpf.dataRows {
 
@@ -203,7 +209,8 @@ func (rpf *rpFile) mergeData() (err error) {
 	//對一位老師的所有科目進行處理
 	mergedRpData := make(map[teacher][]rapidPrint)
 	if len(rpf.gbtd) <= 0 {
-		return fmt.Errorf("gbtd has no data")
+		err = errors.WithStack(fmt.Errorf("gbtd has no data"))
+		return err
 	}
 	for key, value := range rpf.gbtd {
 
@@ -414,7 +421,8 @@ func (rpf *rpFile) transportToSlice() (err error) {
 	//設定第一列
 	rpf.newDataRows = append(rpf.newDataRows, rpf.firstRow)
 	if len(rpf.gbtd) <= 0 {
-		return fmt.Errorf("gbtd has no data")
+		err = errors.WithStack(fmt.Errorf("gbtd has no data"))
+		return err
 	}
 	for key, rpXiValue := range rpf.gbtd {
 		for _, rpValue := range rpXiValue {

@@ -2,32 +2,48 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
-func (f *flags) initFlag() {
+func (f *flags) initFlag() (err error) {
 	helpFlag := flag.Lookup("help")
 	if helpFlag == nil {
 		flag.BoolVar(&f.help, "help", false, "Usage")
 	}
 
 	f.downloadVideoFlagSet = flag.NewFlagSet("download video", flag.ExitOnError)
-	f.setDownloadVideoFlag()
+	err = f.setDownloadVideoFlag()
+	if err != nil {
+		return nil
+	}
 	f.splitScoreAlertFlagSet = flag.NewFlagSet("split scoreAlert", flag.ExitOnError)
-	f.setSplitScoreAlertFlag()
+	err = f.setSplitScoreAlertFlag()
+	if err != nil {
+		return nil
+	}
 	f.mergeVideoFlagSet = flag.NewFlagSet("merge video", flag.ExitOnError)
-	f.setMergeVideoFlag()
+	err = f.setMergeVideoFlag()
+	if err != nil {
+		return nil
+	}
 	f.mergeCourseFlagSet = flag.NewFlagSet("merge course", flag.ExitOnError)
-	f.setMergeCourseFlag()
+	err = f.setMergeCourseFlag()
+	if err != nil {
+		return nil
+	}
 	f.calcDifferentFlagSet = flag.NewFlagSet("calculate different", flag.ExitOnError)
-	f.setCalcDifferentFlag()
+	err = f.setCalcDifferentFlag()
+	if err != nil {
+		return nil
+	}
+	return nil
 }
 
-func (f *flags) setDownloadVideoFlag() {
+func (f *flags) setDownloadVideoFlag() (err error) {
 	//set default video parameter
 	defaultAcademicYear := ""
 	defaultSemester := ""
@@ -42,12 +58,13 @@ func (f *flags) setDownloadVideoFlag() {
 	f.downloadVideoFlagSet.StringVar(&f.semester, "semester", defaultSemester, "設定學期，預設為當前學期")
 	f.downloadVideoFlagSet.StringVar(&f.outputFileName, "filename", "數位課綱", "設定檔名，預設為查詢目標學年+學期+數位課綱")
 	f.downloadVideoFlagSet.BoolVar(&f.help, "help", false, "Usage")
+	return nil
 }
 
 func (f *flags) setSplitScoreAlertFlag() (err error) {
 	path, err := os.Getwd()
 	if err != nil {
-		fmt.Println(err)
+		err = errors.WithStack(err)
 		return err
 	}
 	f.scoreAlertFile = make([]string, 3)
@@ -66,10 +83,11 @@ func (f *flags) setSplitScoreAlertFlag() (err error) {
 	return nil
 }
 
-func (f *flags) setMergeVideoFlag() {
+func (f *flags) setMergeVideoFlag() (err error) {
 	path, err := os.Getwd()
 	if err != nil {
-		log.Println(err)
+		err = errors.WithStack(err)
+		return err
 	}
 	f.svInputFile = make([]string, 3)
 	f.svOutputFile = make([]string, 3)
@@ -80,12 +98,14 @@ func (f *flags) setMergeVideoFlag() {
 	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[1], "outName", "[MERGENCE]數位課綱.xlsx", "輸出檔案名稱")
 	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[2], "outSheet", "工作表", "輸出工作表名稱")
 	f.mergeVideoFlagSet.BoolVar(&f.help, "help", false, "Usage")
+	return nil
 }
 
-func (f *flags) setMergeCourseFlag() {
+func (f *flags) setMergeCourseFlag() (err error) {
 	path, err := os.Getwd()
 	if err != nil {
-		log.Println(err)
+		err = errors.WithStack(err)
+		return err
 	}
 	f.cdInputFile = make([]string, 3)
 	f.cdOutputFile = make([]string, 3)
@@ -96,12 +116,14 @@ func (f *flags) setMergeCourseFlag() {
 	f.mergeCourseFlagSet.StringVar(&f.cdOutputFile[1], "outName", "[MERGENCE]開課總表.xlsx", "輸出檔案名稱")
 	f.mergeCourseFlagSet.StringVar(&f.cdOutputFile[2], "outSheet", "工作表", "輸出工作表名稱")
 	f.mergeCourseFlagSet.BoolVar(&f.help, "help", false, "Usage")
+	return nil
 }
 
-func (f *flags) setCalcDifferentFlag() {
+func (f *flags) setCalcDifferentFlag() (err error) {
 	path, err := os.Getwd()
 	if err != nil {
-		log.Println(err)
+		err = errors.WithStack(err)
+		return err
 	}
 
 	f.calcDifferentFlagSet.StringVar(&f.inputFilePath, "inPath", path+"\\", "輸入檔案路徑")
@@ -112,5 +134,5 @@ func (f *flags) setCalcDifferentFlag() {
 	f.calcDifferentFlagSet.StringVar(&f.outputSheetName, "outSheet", "工作表", "輸出工作表名稱")
 	f.calcDifferentFlagSet.BoolVar(&f.readAllFilesInDir, "A", false, "讀取目錄內所有檔案")
 	f.calcDifferentFlagSet.BoolVar(&f.help, "help", false, "Usage")
-
+	return nil
 }

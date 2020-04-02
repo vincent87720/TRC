@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"golang.org/x/net/html"
 )
 
@@ -101,7 +102,8 @@ func (svlreq *getSVLRequest) setURLValues(academicYear string, semester string, 
 	yearInt, err := strconv.Atoi(academicYear)
 	if err != nil || yearInt < 0 {
 		fmt.Printf("無法解析\"%s\"，請輸入合法的年分", academicYear)
-		return fmt.Errorf("Incorrect year value")
+		err = errors.WithStack(fmt.Errorf("Incorrect year value"))
+		return err
 	} else {
 		svlreq.values.Add("smye", strconv.Itoa(yearInt))
 	}
@@ -109,7 +111,8 @@ func (svlreq *getSVLRequest) setURLValues(academicYear string, semester string, 
 	semesterInt, err := strconv.Atoi(semester)
 	if err != nil || semesterInt < 0 {
 		fmt.Printf("無法解析\"%s\"，請輸入合法的學期", semester)
-		return fmt.Errorf("Incorrect year value")
+		err = errors.WithStack(fmt.Errorf("Incorrect year value"))
+		return err
 	} else {
 		svlreq.values.Add("smty", strconv.Itoa(semesterInt))
 	}
@@ -124,6 +127,7 @@ func (req *request) sendRequest() (err error) {
 	//送出請求並將返回結果放入res
 	res, err := http.Post(req.url, "application/x-www-form-urlencoded", bytes.NewBufferString(req.values.Encode()))
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 	defer res.Body.Close()
@@ -131,6 +135,7 @@ func (req *request) sendRequest() (err error) {
 	//取得res的body並放入sitemap
 	req.responseData, err = ioutil.ReadAll(res.Body)
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 
@@ -142,6 +147,7 @@ func (tdreq *getTDRequest) parseData() (err error) {
 	tdreq.teacherInfo = make([]teacherJSON, 0)
 	err = json.Unmarshal(tdreq.responseData, &tdreq.teacherInfo)
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 	return nil
@@ -152,6 +158,7 @@ func (udreq *getUDRequest) parseData() (err error) {
 	udreq.unitTitle = make(map[string]unitTitleJSON, 0)
 	err = json.Unmarshal(udreq.responseData, &udreq.unitTitle)
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 	return nil
@@ -162,6 +169,7 @@ func (cudreq *getCUDRequest) parseData() (err error) {
 	cudreq.unitInfo = make([]collegeJSON, 0)
 	err = json.Unmarshal(cudreq.responseData, &cudreq.unitInfo)
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 	return nil
@@ -177,7 +185,8 @@ func (cudreq *getCUDRequest) findCollege(department string) (college string, err
 			}
 		}
 	}
-	return "", fmt.Errorf("College not found")
+	err = errors.WithStack(fmt.Errorf("College not found"))
+	return "", err
 }
 
 //transportToSlice 將教師資料放入dtFile的newDataRows中，以便使用exportDataToExcel方法輸出
@@ -186,7 +195,8 @@ func (dtFile *downloadTeacherFile) transportToSlice(tdreq *getTDRequest, unitDat
 	dtFile.newDataRows = append(dtFile.newDataRows, []string{"學院編號", "教師編號", "教師姓名", "所屬單位編號", "所屬單位名稱", "任職狀態", "職稱", "最後更新日期", "分機", "空間代號", "Mail"})
 
 	if len(tdreq.teacherInfo) <= 0 {
-		return fmt.Errorf("teacherInfo hasno data")
+		err = errors.WithStack(fmt.Errorf("teacherInfo hasno data"))
+		return err
 	}
 	for _, value := range tdreq.teacherInfo {
 		//無所屬單位

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"NEWTRC/logging"
 	"bufio"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/user"
 	"strings"
@@ -220,12 +220,16 @@ type flags struct {
 }
 
 //選擇使用模式
-func selectMode(trcCmd *commandSet, f *flags) {
+func selectMode(trcCmd *commandSet, f *flags) (err error) {
 	if len(os.Args) > 1 {
 		autoMode(trcCmd, f)
 	} else {
-		manualMode(trcCmd, f)
+		err = manualMode(trcCmd, f)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func autoMode(trcCmd *commandSet, f *flags) {
@@ -233,16 +237,16 @@ func autoMode(trcCmd *commandSet, f *flags) {
 	analyseCommand(trcCmd, f)
 }
 
-func manualMode(trcCmd *commandSet, f *flags) {
+func manualMode(trcCmd *commandSet, f *flags) (err error) {
 
 	usr, err := user.Current()
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	path, err := os.Getwd()
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	for {
@@ -257,14 +261,17 @@ func manualMode(trcCmd *commandSet, f *flags) {
 		reader := bufio.NewReader(os.Stdin)
 		data, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 		dataXi := strings.Fields(data)
 		os.Args = os.Args[:0]
 		for _, val := range dataXi {
 			os.Args = append(os.Args, val)
 		}
-		f.initFlag()
+		err = f.initFlag()
+		if err != nil {
+			return err
+		}
 		flag.Parse()
 		analyseCommand(trcCmd, f)
 	}
@@ -272,7 +279,10 @@ func manualMode(trcCmd *commandSet, f *flags) {
 
 func main() {
 	var f flags
-	f.initFlag()
+	err := f.initFlag()
+	if err != nil {
+		logging.Error.Printf("%+v\n", err)
+	}
 
 	var trcCmd commandSet
 	trcCmd.commandSet()
@@ -287,7 +297,10 @@ func main() {
 	trcCmd.setLyr1Command("calculate", "計算檔案(計算成績差分)")
 	trcCmd.setLyr2Command("calculate", "difference", "計算成績差分", f.calcDifferentFlagSet)
 
-	selectMode(&trcCmd, &f)
+	err = selectMode(&trcCmd, &f)
+	if err != nil {
+		logging.Error.Printf("%+v\n", err)
+	}
 
 	//合併數位課綱
 	// var inputFile svFile

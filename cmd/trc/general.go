@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Luxurioust/excelize"
+	"github.com/pkg/errors"
 )
 
 //setFile 設定檔案資訊
@@ -17,7 +18,8 @@ func (f *file) setFile(filePath string, fileName string, sheetName string) {
 //fillSliceLength 補足slice到指定大小
 func (f *file) fillSliceLength(length int) (err error) {
 	if len(f.dataRows) <= 0 {
-		return fmt.Errorf("dataRows has no data")
+		err = errors.WithStack(fmt.Errorf("dataRows has no data"))
+		return err
 	}
 	for index := range f.dataRows {
 		for len(f.dataRows[index]) < length {
@@ -32,6 +34,7 @@ func (f *file) readRawData() (err error) {
 	xlsx, err := excelize.OpenFile(f.filePath + f.fileName)
 	if err != nil {
 		fmt.Println("\rError: 找不到\"" + f.fileName + "\"檔案，請確認檔案名稱是否正確")
+		err = errors.WithStack(err)
 		return err
 	}
 
@@ -40,6 +43,7 @@ func (f *file) readRawData() (err error) {
 	f.dataRows, err = xlsx.GetRows(f.sheetName)
 	if err != nil {
 		fmt.Println("\rError: 找不到\"" + f.fileName + "\"檔案內的\"工作表\"")
+		err = errors.WithStack(err)
 		return err
 	}
 
@@ -55,7 +59,8 @@ func (f *file) exportDataToExcel(outputFile file) (err error) {
 
 	//將f.newDataRows資料加入到xlsx內
 	if len(f.newDataRows) <= 0 {
-		return fmt.Errorf("newDataRows has no data")
+		err = errors.WithStack(fmt.Errorf("newDataRows has no data"))
+		return err
 	}
 	for index, value := range f.newDataRows {
 		row := strconv.Itoa(index + 1)
@@ -63,6 +68,7 @@ func (f *file) exportDataToExcel(outputFile file) (err error) {
 
 		err = xlsx.SetSheetRow(outputFile.sheetName, position, &value)
 		if err != nil {
+			err = errors.WithStack(err)
 			return err
 		}
 	}
@@ -71,6 +77,7 @@ func (f *file) exportDataToExcel(outputFile file) (err error) {
 	err = xlsx.SaveAs(outputFile.filePath + outputFile.fileName)
 	if err != nil {
 		fmt.Println("\rError: 無法將檔案\"" + outputFile.fileName + "\"儲存在\"" + outputFile.filePath + "\"目錄內")
+		err = errors.WithStack(err)
 		return err
 	}
 	return nil
@@ -81,7 +88,8 @@ func (f *file) findCol(columnText string, result *int) (err error) {
 	*result = -1 //初始值為-1，若沒找到相對應的字串便會顯示-1
 	//尋找"教師姓名"欄位
 	if len(f.dataRows[0]) <= 0 {
-		return fmt.Errorf("dataRows has no data")
+		err = errors.WithStack(fmt.Errorf("dataRows has no data"))
+		return err
 	}
 	for index, value := range f.dataRows[0] {
 		if value == columnText {
@@ -90,7 +98,8 @@ func (f *file) findCol(columnText string, result *int) (err error) {
 	}
 	if *result == -1 {
 		fmt.Printf("\rError: \"%s\" column not found\n", columnText)
-		return fmt.Errorf("\"%s\" column not found", columnText)
+		err = errors.WithStack(fmt.Errorf("\"%s\" column not found", columnText))
+		return err
 	}
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Luxurioust/excelize"
+	"github.com/pkg/errors"
 )
 
 //SplitScoreAlertData 分割預警總表，取得teacherFile資訊作為檔名，並以templateFile為模板另存至outputFile的路徑
@@ -51,7 +52,8 @@ func (saf *saFile) groupByTeacher() (err error) {
 
 	saf.gbtd = make(map[teacher][]scoreAllert)
 	if len(saf.dataRows[0]) <= 0 {
-		return fmt.Errorf("dataRows has no data")
+		err = errors.WithStack(fmt.Errorf("dataRows has no data"))
+		return err
 	}
 	for index, value := range saf.dataRows {
 
@@ -96,7 +98,8 @@ func (thr *thFile) groupByTeacher() (err error) {
 
 	thr.teacherMap = make(map[string][]teacher)
 	if len(thr.dataRows[0]) <= 0 {
-		return fmt.Errorf("teacher list dataRows has no data")
+		err = errors.WithStack(fmt.Errorf("teacher list dataRows has no data"))
+		return err
 	}
 	for index, value := range thr.dataRows {
 
@@ -126,11 +129,13 @@ func (thr *thFile) groupByTeacher() (err error) {
 func (saf *saFile) exportDataToExcel(templateFile file, teacherFile thFile, outputFile file) (err error) {
 
 	if len(saf.gbtd) <= 0 {
-		return fmt.Errorf("gbtd has no data")
+		err = errors.WithStack(fmt.Errorf("gbtd has no data"))
+		return err
 	}
 	for key, value := range saf.gbtd {
 		xlsx, err := excelize.OpenFile(templateFile.filePath + templateFile.fileName)
 		if err != nil {
+			err = errors.WithStack(err)
 			return err
 		}
 		if len(teacherFile.teacherMap[key.teacherName]) > 0 {
@@ -149,6 +154,7 @@ func (saf *saFile) exportDataToExcel(templateFile file, teacherFile thFile, outp
 			position := "A" + row
 			err = xlsx.SetSheetRow(templateFile.sheetName, position, &[]interface{}{val.course.department.departmentName, val.courseID, val.courseName, key.teacherName, val.studentID, val.studentName, val.allertReason})
 			if err != nil {
+				err = errors.WithStack(err)
 				return err
 			}
 		}
@@ -157,6 +163,7 @@ func (saf *saFile) exportDataToExcel(templateFile file, teacherFile thFile, outp
 		err = xlsx.SaveAs(outputFile.filePath + outputFile.fileName)
 		if err != nil {
 			fmt.Println("\rError: 無法將檔案\"" + outputFile.fileName + "\"儲存在\"" + outputFile.filePath + "\"目錄內")
+			err = errors.WithStack(err)
 			return err
 		}
 	}
