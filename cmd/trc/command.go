@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/pkg/errors"
 )
 
 //constructer
@@ -98,12 +99,28 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 						return
 					}
 
-					fmt.Println(">> GetSyllabusVideoLink")
-					err = getSyllabusVideo(f)
-					if err != nil {
+					if f.youtubeAPIKey == "" {
+						err = errors.WithStack(fmt.Errorf("youtubeAPIKey missing"))
 						logging.Error.Printf("%+v\n", err)
+						fmt.Println("\rError: 沒有指定youtubeAPIKey，使用-key指定參數")
 						fmt.Println("\r> Downloading have failed")
+					} else {
+						fmt.Println(">> GetSyllabusVideoLink")
+						if f.appendVideoInfo {
+							err = appendSyllabusVideoInfo(f)
+							if err != nil {
+								logging.Error.Printf("%+v\n", err)
+								fmt.Println("\r> Downloading have failed")
+							}
+						} else {
+							err = getSyllabusVideo(f)
+							if err != nil {
+								logging.Error.Printf("%+v\n", err)
+								fmt.Println("\r> Downloading have failed")
+							}
+						}
 					}
+
 				case "teacher":
 					fmt.Println(">> GetTeacherData")
 					err := getTeacher()
@@ -307,6 +324,20 @@ func getSyllabusVideo(f *flags) (err error) {
 	quit <- 1
 	fmt.Println("\r> Downloading course data have completed")
 
+	go spinner("Video data is downloading...", 80*time.Millisecond, quit)
+	err = svlreq.getVideoID()
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	err = svlreq.getVideoInfo(f.youtubeAPIKey)
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	quit <- 1
+	fmt.Println("\r> Downloading video data have completed")
+
 	go spinner("Files are exporting...", 80*time.Millisecond, quit)
 	err = inputFile.transportToSlice(&svlreq)
 	if err != nil {
@@ -321,6 +352,92 @@ func getSyllabusVideo(f *flags) (err error) {
 	quit <- 1
 	fmt.Println("\r> Exporting have completed")
 
+	return nil
+}
+
+func appendSyllabusVideoInfo(f *flags) (err error) {
+	var inputFile downloadSVFile
+	var outputFile file
+	inputFile.setFile(f.downloadSVInputFile[0], f.downloadSVInputFile[1], f.downloadSVInputFile[2])
+	//若預設檔名沒變就將檔名改成學年度+學期+數位課綱.xlsx
+	if f.downloadSVOutputFile[1] == "數位課綱.xlsx" {
+		f.downloadSVOutputFile[1] = f.academicYear + f.semester + f.downloadSVOutputFile[1]
+	}
+	outputFile.setFile(f.downloadSVOutputFile[0], f.downloadSVOutputFile[1], f.downloadSVOutputFile[2])
+
+	quit := make(chan int)
+	defer close(quit)
+
+	go spinner("Course file is loading...", 80*time.Millisecond, quit)
+	err = inputFile.readRawData()
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	err = inputFile.findCol("科目序號", &inputFile.cidCol)
+	if err != nil {
+		return err
+	}
+	err = inputFile.fillSliceLength(len(inputFile.firstRow))
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	quit <- 1
+	fmt.Println("\r> Loading file have completed")
+
+	go spinner("Course data is downloading...", 80*time.Millisecond, quit)
+	var svlreq getSVLRequest
+	svlreq.svXi = make(map[string][]syllabusVideo)
+	svlreq.newRequest()
+	svlreq.setURL("http://syl.dyu.edu.tw/sl_cour_time.php?itimestamp=" + strconv.FormatInt(time.Now().Unix(), 10))
+	// err = svlreq.setURLValues(f.academicYear, f.semester, "'1'", "'1'")
+	err = svlreq.setURLValues(f.academicYear, f.semester, "'1','2','3','4','5','6','7'", "'1','2','3','4','N','5','6','7','8','9','A','B','C','D','E'")
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	err = svlreq.sendPostRequest()
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	err = svlreq.parseHTML()
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	svlreq.findNode(svlreq.htmlNode)
+	quit <- 1
+	fmt.Println("\r> Downloading course data have completed")
+
+	go spinner("Video data is downloading...", 80*time.Millisecond, quit)
+	err = svlreq.getVideoID()
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	err = svlreq.getVideoInfo(f.youtubeAPIKey)
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	quit <- 1
+	fmt.Println("\r> Downloading video data have completed")
+
+	go spinner("Files are exporting...", 80*time.Millisecond, quit)
+	err = inputFile.appendVideoInfo(&svlreq)
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	err = inputFile.exportDataToExcel(outputFile)
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	quit <- 1
+	fmt.Println("\r> Exporting have completed")
 	return nil
 }
 

@@ -68,8 +68,11 @@ type syllabusVideo struct {
 	course
 	teacher
 	timeNPlace      string
+	videoID         string
+	videoTitle      string
 	videoURL        string //數位課綱連結
-	videoDuration   string //數位課綱影片長度
+	videoDuration   string //數位課綱影片長度(string)
+	videoSeconds    int    //數位課綱影片長度(second)
 	problemOfCourse string //影片問題
 }
 
@@ -176,6 +179,7 @@ type downloadTeacherFile struct {
 //downloadSyllabusVideoFile 下載的檔案
 type downloadSVFile struct {
 	file
+	cidCol int //科目序號欄位
 }
 
 type command struct {
@@ -201,8 +205,11 @@ type flags struct {
 	outputSheetName string //-outSheet
 
 	//download video parameter
+	appendVideoInfo      bool
 	academicYear         string //-year
 	semester             string //-semester
+	youtubeAPIKey        string
+	downloadSVInputFile  []string
 	downloadSVOutputFile []string
 
 	//merge syllabus video parameter
