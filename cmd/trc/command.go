@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/fatih/color"
@@ -98,7 +99,11 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					}
 
 					fmt.Println(">> GetSyllabusVideoLink")
-					getSyllabusVideo()
+					err = getSyllabusVideo(f)
+					if err != nil {
+						logging.Error.Printf("%+v\n", err)
+						fmt.Println("\r> Downloading have failed")
+					}
 				case "teacher":
 					fmt.Println(">> GetTeacherData")
 					err := getTeacher()
@@ -264,18 +269,58 @@ func percentViewer(denominator int, delay time.Duration, in chan int, quit chan 
 }
 
 //getSyllabusVideo 從學校網站抓取數位課綱影片連結
-func getSyllabusVideo() (err error) {
+func getSyllabusVideo(f *flags) (err error) {
+	var inputFile downloadSVFile
+	var outputFile file
+
+	//若預設檔名沒變就將檔名改成學年度+學期+數位課綱.xlsx
+	if f.downloadSVOutputFile[1] == "數位課綱.xlsx" {
+		f.downloadSVOutputFile[1] = f.academicYear + f.semester + f.downloadSVOutputFile[1]
+	}
+	outputFile.setFile(f.downloadSVOutputFile[0], f.downloadSVOutputFile[1], f.downloadSVOutputFile[2])
+
+	quit := make(chan int)
+	defer close(quit)
+
+	go spinner("Course data is downloading...", 80*time.Millisecond, quit)
 	var svlreq getSVLRequest
+	svlreq.svXi = make(map[string][]syllabusVideo)
 	svlreq.newRequest()
-	svlreq.setURL("http://syl.dyu.edu.tw/sl_cour_time.php?itimestamp=" + string(int32(time.Now().Unix())))
-	err = svlreq.setURLValues("108", "1", "'1','2','3','4','5','6','7'", "'1','2','3','4','N','5','6','7','8','9','A','B','C','D','E'")
+	svlreq.setURL("http://syl.dyu.edu.tw/sl_cour_time.php?itimestamp=" + strconv.FormatInt(time.Now().Unix(), 10))
+	// err = svlreq.setURLValues(f.academicYear, f.semester, "'1'", "'1'")
+	err = svlreq.setURLValues(f.academicYear, f.semester, "'1','2','3','4','5','6','7'", "'1','2','3','4','N','5','6','7','8','9','A','B','C','D','E'")
 	if err != nil {
+		quit <- 1
 		return err
 	}
-	err = svlreq.sendRequest()
+	err = svlreq.sendPostRequest()
 	if err != nil {
+		quit <- 1
 		return err
 	}
+	err = svlreq.parseHTML()
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	svlreq.findNode(svlreq.htmlNode)
+	quit <- 1
+	fmt.Println("\r> Downloading course data have completed")
+
+	go spinner("Files are exporting...", 80*time.Millisecond, quit)
+	err = inputFile.transportToSlice(&svlreq)
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	err = inputFile.exportDataToExcel(outputFile)
+	if err != nil {
+		quit <- 1
+		return err
+	}
+	quit <- 1
+	fmt.Println("\r> Exporting have completed")
+
 	return nil
 }
 
@@ -293,7 +338,7 @@ func getTeacher() (err error) {
 
 	go spinner("Unit data is downloading...", 80*time.Millisecond, quit)
 	udreq.setURL("https://lg.dyu.edu.tw/get_unit_title.php")
-	err = udreq.sendRequest()
+	err = udreq.sendPostRequest()
 	if err != nil {
 		quit <- 1
 		return err
@@ -304,7 +349,7 @@ func getTeacher() (err error) {
 		return err
 	}
 	cudreq.setURL("http://lg.dyu.edu.tw/search_unit.php")
-	err = cudreq.sendRequest()
+	err = cudreq.sendPostRequest()
 	if err != nil {
 		quit <- 1
 		return err
@@ -319,7 +364,7 @@ func getTeacher() (err error) {
 
 	go spinner("Teacher data is downloading...", 80*time.Millisecond, quit)
 	tdreq.setURL("https://lg.dyu.edu.tw/search_teacher.php")
-	err = tdreq.sendRequest()
+	err = tdreq.sendPostRequest()
 	if err != nil {
 		quit <- 1
 		return err

@@ -54,9 +54,19 @@ func (f *flags) setDownloadVideoFlag() (err error) {
 		defaultAcademicYear = strconv.Itoa(time.Now().Year() - 1911)
 		defaultSemester = "1"
 	}
+
+	path, err := os.Getwd()
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	f.downloadSVOutputFile = make([]string, 3)
 	f.downloadVideoFlagSet.StringVar(&f.academicYear, "year", defaultAcademicYear, "設定學年度，預設為當前學年度")
 	f.downloadVideoFlagSet.StringVar(&f.semester, "semester", defaultSemester, "設定學期，預設為當前學期")
 	f.downloadVideoFlagSet.StringVar(&f.outputFileName, "filename", "數位課綱", "設定檔名，預設為查詢目標學年+學期+數位課綱")
+	f.downloadVideoFlagSet.StringVar(&f.downloadSVOutputFile[0], "outPath", path+"\\", "輸出檔案路徑")
+	f.downloadVideoFlagSet.StringVar(&f.downloadSVOutputFile[1], "outName", "數位課綱.xlsx", "輸出檔案名稱")
+	f.downloadVideoFlagSet.StringVar(&f.downloadSVOutputFile[2], "outSheet", "工作表", "輸出工作表名稱")
 	f.downloadVideoFlagSet.BoolVar(&f.help, "help", false, "Usage")
 	return nil
 }

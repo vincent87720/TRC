@@ -66,7 +66,10 @@ type student struct {
 
 type syllabusVideo struct {
 	course
+	teacher
+	timeNPlace      string
 	videoURL        string //數位課綱連結
+	videoDuration   string //數位課綱影片長度
 	problemOfCourse string //影片問題
 }
 
@@ -170,6 +173,11 @@ type downloadTeacherFile struct {
 	file
 }
 
+//downloadSyllabusVideoFile 下載的檔案
+type downloadSVFile struct {
+	file
+}
+
 type command struct {
 	commandString string
 	commandAction string
@@ -193,8 +201,9 @@ type flags struct {
 	outputSheetName string //-outSheet
 
 	//download video parameter
-	academicYear string //-year
-	semester     string //-semester
+	academicYear         string //-year
+	semester             string //-semester
+	downloadSVOutputFile []string
 
 	//merge syllabus video parameter
 	svInputFile  []string

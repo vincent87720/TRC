@@ -99,7 +99,7 @@ func (svf *svFile) transportToSlice() (err error) {
 		coutCourseNum := 0 //計算每位老師的科目數量
 
 		for _, array := range value {
-			tempXi = append(tempXi, array.departmentName, array.courseID, array.courseName, array.problemOfCourse)
+			tempXi = append(tempXi, array.course.department.departmentName, array.courseID, array.courseName, array.problemOfCourse)
 			coutCourseNum++
 		}
 

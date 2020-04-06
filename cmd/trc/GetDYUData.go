@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/html"
@@ -17,6 +19,7 @@ type request struct {
 	url          string
 	values       url.Values
 	responseData []byte
+	htmlNode     *html.Node
 }
 
 //getTeacherDataRequest
@@ -40,11 +43,18 @@ type getCUDRequest struct {
 //getSyllabusVideoLinkRequest
 type getSVLRequest struct {
 	request
-	smye     string //academicYear
-	smty     string //semester
-	day      string
-	lesson   string
-	htmlNode *html.Node
+	academicYear string //academicYear
+	semester     string //semester
+	svXi         map[string][]syllabusVideo
+}
+
+//getYoutubeVideoDurationRequest
+type getYTVDRequest struct {
+	request
+	duration      string
+	seconds       int
+	youtubeAPIKey string
+	videoInfo     ytVideoInfo
 }
 
 //collegeJSON 從學校取得的單位及所屬單位關聯
@@ -87,6 +97,18 @@ type unitJSON struct {
 	Unittitle string
 }
 
+//Youtube JSON structures
+type detail struct {
+	Duration string
+}
+type item struct {
+	Id             string
+	ContentDetails detail
+}
+type ytVideoInfo struct {
+	Items []item
+}
+
 func (req *request) newRequest() {
 	req.values = url.Values{}
 	req.responseData = make([]byte, 0)
@@ -97,32 +119,8 @@ func (req *request) setURL(url string) {
 	req.url = url
 }
 
-//setURLValues 設定發送(數位課綱影片連結)請求的參數
-func (svlreq *getSVLRequest) setURLValues(academicYear string, semester string, day string, lesson string) (err error) {
-	yearInt, err := strconv.Atoi(academicYear)
-	if err != nil || yearInt < 0 {
-		fmt.Printf("無法解析\"%s\"，請輸入合法的年分", academicYear)
-		err = errors.WithStack(fmt.Errorf("Incorrect year value"))
-		return err
-	} else {
-		svlreq.values.Add("smye", strconv.Itoa(yearInt))
-	}
-
-	semesterInt, err := strconv.Atoi(semester)
-	if err != nil || semesterInt < 0 {
-		fmt.Printf("無法解析\"%s\"，請輸入合法的學期", semester)
-		err = errors.WithStack(fmt.Errorf("Incorrect year value"))
-		return err
-	} else {
-		svlreq.values.Add("smty", strconv.Itoa(semesterInt))
-	}
-
-	svlreq.values.Add("str_time", day+"sec"+lesson)
-	return nil
-}
-
 //sendRequest 發送請求
-func (req *request) sendRequest() (err error) {
+func (req *request) sendPostRequest() (err error) {
 
 	//送出請求並將返回結果放入res
 	res, err := http.Post(req.url, "application/x-www-form-urlencoded", bytes.NewBufferString(req.values.Encode()))
@@ -139,6 +137,80 @@ func (req *request) sendRequest() (err error) {
 		return err
 	}
 
+	return nil
+}
+
+//sendGetRequest 發送GET請求
+func (req *request) sendGetRequest() (err error) {
+
+	//送出請求並將返回結果放入res
+	res, err := http.Get(req.url)
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	defer res.Body.Close()
+
+	//取得res的body並放入sitemap
+	req.responseData, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+
+	return nil
+}
+
+//parseHTML 剖析HTML字串放入req.htmlNode中
+func (req *request) parseHTML() (err error) {
+	node, err := html.Parse(strings.NewReader(string(req.responseData)))
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	req.htmlNode = node
+	return nil
+}
+
+func (ytvdreq *getYTVDRequest) getYoutubeVideoDuration(videoID string) (err error) {
+	ytvdreq.setURL("https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=" + videoID + "&key=" + ytvdreq.youtubeAPIKey)
+	err = ytvdreq.sendGetRequest()
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	return nil
+}
+
+func (ytvdreq *getYTVDRequest) parseData() (err error) {
+	r1, err := regexp.Compile(`([0-9]*)M`)
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	r2, err := regexp.Compile(`([0-9]*)S`)
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+
+	err = json.Unmarshal(ytvdreq.responseData, &ytvdreq.videoInfo)
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	ytvdreq.duration = ytvdreq.videoInfo.Items[0].ContentDetails.Duration
+	min, err := strconv.Atoi(r1.FindString(ytvdreq.duration))
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	sec, err := strconv.Atoi(r2.FindString(ytvdreq.duration))
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	ytvdreq.seconds = min*60 + sec
 	return nil
 }
 
@@ -232,6 +304,149 @@ func (dtFile *downloadTeacherFile) transportToSlice(tdreq *getTDRequest, unitDat
 			}
 			tempXi = append(tempXi, value.Teno, value.Name, unit.Unitid, unitData.unitTitle[unit.Unitid].Title_tw, value.Worktime, value.Title, value.Update, value.Ext, value.Room, value.Mail)
 			dtFile.newDataRows = append(dtFile.newDataRows, tempXi)
+		}
+	}
+	return nil
+}
+
+//setURLValues 設定發送(數位課綱影片連結)請求的參數
+func (svlreq *getSVLRequest) setURLValues(academicYear string, semester string, day string, lesson string) (err error) {
+	yearInt, err := strconv.Atoi(academicYear)
+	if err != nil || yearInt < 0 {
+		fmt.Printf("無法解析\"%s\"，請輸入合法的年分", academicYear)
+		err = errors.WithStack(fmt.Errorf("Incorrect year value"))
+		return err
+	} else {
+		svlreq.values.Add("smye", strconv.Itoa(yearInt))
+		svlreq.academicYear = academicYear
+	}
+
+	semesterInt, err := strconv.Atoi(semester)
+	if err != nil || semesterInt < 0 {
+		fmt.Printf("無法解析\"%s\"，請輸入合法的學期", semester)
+		err = errors.WithStack(fmt.Errorf("Incorrect year value"))
+		return err
+	} else {
+		svlreq.values.Add("smty", strconv.Itoa(semesterInt))
+		svlreq.semester = semester
+	}
+
+	svlreq.values.Add("str_time", day+"sec"+lesson)
+	return nil
+}
+
+//findNode 尋找class為row的標籤的子標籤，依照欄位放入svlreq.svXi
+func (svlreq *getSVLRequest) findNode(n *html.Node) {
+	if n.Type == html.ElementNode && n.Data == "div" {
+		for _, a := range n.Attr {
+			if a.Key == "class" && a.Val == "row" {
+				var cs syllabusVideo
+				var cID string
+				for child := n.FirstChild; child != nil; child = child.NextSibling {
+					for _, a1 := range child.Attr {
+						if a1.Key == "class" {
+						}
+						if child.FirstChild != nil {
+							if a1.Val == "td1" {
+								if child.FirstChild != nil {
+									cs.grade = child.FirstChild.Data[:1]
+									cs.class = child.FirstChild.Data[2:]
+									break
+								}
+							}
+							if a1.Val == "td2" {
+								if child.FirstChild != nil {
+									cs.credit = child.FirstChild.Data[:1]
+									cs.chooseSelect = child.FirstChild.Data[2:]
+									break
+								}
+							}
+							if a1.Val == "td3" {
+								if child.FirstChild != nil {
+									cs.courseID = child.FirstChild.Data
+									cID = child.FirstChild.Data
+									break
+								}
+							}
+							if a1.Val == "td4" {
+								if child.FirstChild != nil {
+									cs.courseName = child.FirstChild.Data
+									break
+								}
+							}
+							if a1.Val == "td5" {
+								if child.FirstChild != nil {
+									cs.teacher.teacherName = child.FirstChild.Data
+									break
+								}
+							}
+							if a1.Val == "td7" {
+								if child.FirstChild != nil {
+									cs.timeNPlace = child.FirstChild.Data
+									break
+								}
+							}
+							if a1.Val == "td8" {
+								if child.FirstChild != nil {
+									cs.remark = child.FirstChild.Data
+									break
+								}
+							}
+							if a1.Val == "td9" {
+								if child.LastChild != nil {
+									for _, a2 := range child.LastChild.Attr {
+										if a2.Key == "href" {
+											cs.videoURL = a2.Val
+											break
+										}
+									}
+								}
+
+							}
+						}
+
+					}
+				}
+				svlreq.svXi[cID] = append(svlreq.svXi[cID], cs)
+			}
+		}
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		svlreq.findNode(c)
+	}
+}
+
+//transportToSlice 將教師資料放入dtFile的newDataRows中，以便使用exportDataToExcel方法輸出
+func (dsvFile *downloadSVFile) transportToSlice(svlreq *getSVLRequest) (err error) {
+	dsvFile.newDataRows = make([][]string, 0)
+	dsvFile.newDataRows = append(dsvFile.newDataRows, []string{"學年度", "學期", "年", "班", "學分數", "必選別", "科目序號", "科目名稱", "授課教師", "上課時間/地點", "備註", "數位課綱URL"})
+
+	if len(svlreq.svXi) <= 0 {
+		err = errors.WithStack(fmt.Errorf("svXi has no data"))
+		return err
+	}
+	for _, xi := range svlreq.svXi {
+		for _, sv := range xi {
+			tempXi := make([]string, 0)
+			tempXi = append(tempXi, svlreq.academicYear, svlreq.semester, sv.grade, sv.class, sv.credit, sv.chooseSelect, sv.courseID, sv.courseName, sv.teacherName, sv.timeNPlace, sv.remark, sv.videoURL)
+			dsvFile.newDataRows = append(dsvFile.newDataRows, tempXi)
+		}
+	}
+	return nil
+}
+
+func (svlreq *getSVLRequest) getDuration() (err error) {
+	r1, err := regexp.Compile(`(\/watch\?v=|youtu.be\/)...........`)
+	if err != nil {
+		err = errors.WithStack(err)
+		return err
+	}
+	for _, svXi := range svlreq.svXi {
+		for _, sv := range svXi {
+			if sv.videoURL != "javascript:alert(\"尚未提供連結\")" {
+				fmt.Println(r1.FindString(sv.videoURL)[9:])
+			}
 		}
 	}
 	return nil
