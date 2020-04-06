@@ -154,7 +154,7 @@ func (dcf *dcFile) transportToSlice() (err error) {
 					return err
 				}
 				convStr := strconv.FormatFloat(diff, 'f', -1, 64)
-				if diff > 9 || diff < -9 {
+				if diff > 9.99 || diff < -9.99 {
 					convStr = "[" + convStr + "]"
 					outOfRange = true //該面向中有超過差分的成績
 				}
