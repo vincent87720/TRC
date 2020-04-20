@@ -33,7 +33,7 @@ func (f *file) fillSliceLength(length int) (err error) {
 func (f *file) readRawData() (err error) {
 	xlsx, err := excelize.OpenFile(f.filePath + f.fileName)
 	if err != nil {
-		fmt.Println("\rError: 找不到\"" + f.fileName + "\"檔案，請確認檔案名稱是否正確")
+		fmt.Println("\rError: 無法開啟\"" + f.fileName + "\"檔案，請確認檔案名稱是否正確")
 		err = errors.WithStack(err)
 		return err
 	}
@@ -42,7 +42,7 @@ func (f *file) readRawData() (err error) {
 	// sheetName := "工作表"
 	f.dataRows, err = xlsx.GetRows(f.sheetName)
 	if err != nil {
-		fmt.Println("\rError: 找不到\"" + f.fileName + "\"檔案內的\"工作表\"")
+		fmt.Println("\rError: 無法讀取\"" + f.fileName + "\"檔案內的工作表")
 		err = errors.WithStack(err)
 		return err
 	}
@@ -107,7 +107,7 @@ func (f *file) findCol(columnText string, result *int) (err error) {
 //printRawData 輸出檔案資訊
 func (f *file) printRawData() {
 	for _, value := range f.dataRows {
-		fmt.Println(value)
+		fmt.Println(len(value))
 	}
 }
 

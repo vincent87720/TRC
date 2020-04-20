@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Luxurioust/excelize"
+	"github.com/pkg/errors"
 )
 
 func (dcf *dcFile) DifferenceCalculate(outputFile file) (err error) {
@@ -13,6 +14,10 @@ func (dcf *dcFile) DifferenceCalculate(outputFile file) (err error) {
 		return err
 	}
 	err = dcf.setJudge()
+	if err != nil {
+		return err
+	}
+	err = dcf.fillSliceLength(len(dcf.firstRow))
 	if err != nil {
 		return err
 	}
@@ -66,7 +71,7 @@ func (dcf *dcFile) groupByStudent() (err error) {
 	for index, value := range dcf.dataRows {
 
 		//遇到第四行以前，或委員A的面向一未評分，或"綜合評語/備註："行跳過
-		if index < startLoop || value[5] == "" || value[2] == "綜合評語/備註：" {
+		if index < startLoop || len(value) < 6 || value[5] == "" || value[2] == "綜合評語/備註：" {
 			continue
 		}
 
@@ -201,6 +206,7 @@ func (dcf *dcFile) exportDataToExcel(outputFile file) (err error) {
 	xlsx.SetSheetName("Sheet1", outputFile.sheetName)
 	err = xlsx.SetColWidth(outputFile.sheetName, "E", "E", 12)
 	if err != nil {
+		err = errors.WithStack(err)
 		return err
 	}
 
@@ -211,6 +217,7 @@ func (dcf *dcFile) exportDataToExcel(outputFile file) (err error) {
 
 		err = xlsx.SetSheetRow(outputFile.sheetName, position, &value)
 		if err != nil {
+			err = errors.WithStack(err)
 			return err
 		}
 	}
@@ -219,6 +226,7 @@ func (dcf *dcFile) exportDataToExcel(outputFile file) (err error) {
 	err = xlsx.SaveAs(outputFile.filePath + outputFile.fileName)
 	if err != nil {
 		fmt.Println("\rError: 無法將檔案\"" + outputFile.fileName + "\"儲存在\"" + outputFile.filePath + "\"目錄內")
+		err = errors.WithStack(err)
 		return err
 	}
 	return nil

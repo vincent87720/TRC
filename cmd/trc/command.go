@@ -227,7 +227,6 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 						err := calcDifferenceAllFile(f)
 						if err != nil {
 							logging.Error.Printf("%+v\n", err)
-							fmt.Println("\r> Calculating have failed")
 						}
 					} else {
 						err := calcDifference(f)
@@ -754,8 +753,8 @@ func calcDifference(f *flags) (err error) {
 //calcDifferenceAllFile 將目錄內所有尺規評量成績評分表進行差分計算
 func calcDifferenceAllFile(f *flags) (err error) {
 
-	in := make(chan int, 10)
-	quit := make(chan int)
+	// in := make(chan int, 10)
+	// quit := make(chan int)
 	loopCount := 1
 	xlsxFileXi := make([]string, 0)
 	allFiles, err := ioutil.ReadDir("./")
@@ -770,24 +769,26 @@ func calcDifferenceAllFile(f *flags) (err error) {
 		}
 	}
 
-	go percentViewer(len(xlsxFileXi), 80*time.Millisecond, in, quit)
+	// go percentViewer(len(xlsxFileXi), 80*time.Millisecond, in, quit)
 
 	for _, xlsxName := range xlsxFileXi {
-		in <- loopCount
+		// in <- loopCount
 		var inputFile dcFile
 		var outputFile file
 		inputFile.setFile(f.inputFilePath, xlsxName, f.inputSheetName)
 		outputFile.setFile(f.outputFilePath, "[DIFFERENCE]"+xlsxName, f.outputSheetName)
 		err = inputFile.DifferenceCalculate(outputFile)
 		if err != nil {
-			return err
+			fmt.Println("\r>[" + strconv.Itoa(loopCount) + "][Fail]\t\t" + xlsxName)
+			logging.Error.Printf("%+v\n", err)
+		} else {
+			fmt.Println("\r>[" + strconv.Itoa(loopCount) + "][Success]\t" + xlsxName)
 		}
 		loopCount++
 	}
 
-	quit <- 1
-	fmt.Println("\r> Exporting have completed")
-	close(quit)
-	close(in)
+	// quit <- 1
+	// close(quit)
+	// close(in)
 	return nil
 }
