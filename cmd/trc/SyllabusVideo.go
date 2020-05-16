@@ -36,10 +36,6 @@ func (svf *svFile) groupByTeacher() (err error) {
 	if err != nil {
 		return err
 	}
-	err = svf.findCol("開課系所", &svf.depCol)
-	if err != nil {
-		return err
-	}
 	err = svf.findCol("科目序號", &svf.cidCol)
 	if err != nil {
 		return err
@@ -72,9 +68,6 @@ func (svf *svFile) groupByTeacher() (err error) {
 			}
 			c := syllabusVideo{
 				course: course{
-					department: department{
-						departmentName: value[svf.depCol],
-					},
 					courseID:   value[svf.cidCol],
 					courseName: value[svf.csnCol],
 				},
@@ -93,22 +86,35 @@ func (svf *svFile) transportToSlice() (err error) {
 		return err
 	}
 	for key, value := range svf.gbtd {
-		tempXi := make([]string, 0)
-		tempXi = append(tempXi, key.teacherName)
 
-		coutCourseNum := 0 //計算每位老師的科目數量
-
-		for _, array := range value {
-			tempXi = append(tempXi, array.course.department.departmentName, array.courseID, array.courseName, array.problemOfCourse)
-			coutCourseNum++
+		//計算若目前老師的科目數量會佔幾列
+		rowNum := len(value) / 9
+		if len(value)%9 != 0 {
+			rowNum += 1
 		}
 
-		//若目前老師的科目數量大於最大數量，將其設為最大數量
-		if coutCourseNum > svf.maxCourseNum {
-			svf.maxCourseNum = coutCourseNum
+		//將rowNum列加入到svf.mergedXi中
+		for i := 0; i < rowNum; i++ {
+			tempXi := make([]string, 0)
+			tempXi = append(tempXi, key.teacherName)
+
+			//每列只能放9個，多的給下一圈執行
+			for j := 0; j < 9; j++ {
+				//放到最後一個為止
+				if i*9+j >= len(value) {
+					break
+				}
+				tempXi = append(tempXi, value[i*9+j].courseName, value[i*9+j].courseID, value[i*9+j].problemOfCourse)
+			}
+
+			//若目前老師的科目數量大於最大數量，將其設為最大數量
+			if len(value) > svf.maxCourseNum {
+				svf.maxCourseNum = len(value)
+			}
+
+			svf.mergedXi = append(svf.mergedXi, tempXi)
 		}
 
-		svf.mergedXi = append(svf.mergedXi, tempXi)
 	}
 	return nil
 }
@@ -121,11 +127,11 @@ func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
 
 	//更改工作表網底
 	var mark string //當超過Z時會變成AA，超過AZ會變成BA，此變數標記目前標記為何
-	fillColorEFECD7, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#EFECD7"],"pattern":1}}`)
-	if err != nil {
-		err = errors.WithStack(err)
-		return err
-	}
+	// fillColorEFECD7, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#EFECD7"],"pattern":1}}`)
+	// if err != nil {
+	// 	err = errors.WithStack(err)
+	// 	return err
+	// }
 	fillColorE9E7D6, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#E9E7D6"],"pattern":1}}`)
 	if err != nil {
 		err = errors.WithStack(err)
@@ -142,7 +148,7 @@ func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
 		return err
 	}
 
-	for i := 66; i < 66+svf.maxCourseNum*4; i++ {
+	for i := 66; i < 66+svf.maxCourseNum*3; i++ {
 		if i < 91 {
 			mark = string(i)
 		} else if i < 117 {
@@ -153,26 +159,20 @@ func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
 			mark = "C" + string(i-26*3)
 		}
 
-		switch i % 4 {
-		case 2:
-			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorEFECD7)
-			if err != nil {
-				err = errors.WithStack(err)
-				return err
-			}
-		case 3:
+		switch i % 3 {
+		case 0:
 			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorE9E7D6)
 			if err != nil {
 				err = errors.WithStack(err)
 				return err
 			}
-		case 0:
+		case 1:
 			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorE0E4D6)
 			if err != nil {
 				err = errors.WithStack(err)
 				return err
 			}
-		case 1:
+		case 2:
 			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorDADCD2)
 			if err != nil {
 				err = errors.WithStack(err)
@@ -185,7 +185,7 @@ func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
 	title := make([]string, 0)
 	title = append(title, "授課教師")
 	for i := 0; i < svf.maxCourseNum; i++ {
-		title = append(title, "開課系所", "科目序號", "科目名稱", "影片問題")
+		title = append(title, "科目名稱", "科目序號", "影片問題")
 	}
 	err = xlsx.SetSheetRow(outputFile.sheetName, "A1", &title)
 	if err != nil {
