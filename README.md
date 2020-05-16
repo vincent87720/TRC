@@ -12,7 +12,7 @@
 
   
 
-進入bin>trc.exe，點擊Download下載主程式
+點擊[Download](https://github.com/vincent87720/TRC/raw/ver2.0/bin/trc.exe) 下載，或進入bin>trc.exe，點擊Download下載主程式
 
 ![進入bin目錄](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/bin.png)
 
@@ -192,7 +192,8 @@
 預設值：目前所在路徑  
 指定方式為`-templatePath 路徑` ex: -templatePath C:\Users\User\Desktop\TRCProgram\
 
-
+**輸入檔案範例**     
+[分割預警總表範例檔案](https://github.com/vincent87720/TRC/tree/ver2.0/assets/exampleInputFile/%E5%88%86%E5%89%B2%E9%A0%90%E8%AD%A6%E7%B8%BD%E8%A1%A8)
 
 ## 計算尺規成績差分
 
@@ -246,6 +247,9 @@
 -  **-outPath** 指定輸出檔案路徑(點擊右鍵>內容>位置，可得知檔案位置)，若檔案與trc.exe同目錄則無需指定  
 預設值：目前所在路徑  
 指定方式為`-outPath 路徑` ex: -outPath C:\Users\User\Desktop\TRCProgram\
+
+**輸入檔案範例**     
+[計算尺規成績差分範例檔案](https://github.com/vincent87720/TRC/tree/ver2.0/assets/exampleInputFile/%E8%A8%88%E7%AE%97%E5%B0%BA%E8%A6%8F%E6%88%90%E7%B8%BE%E5%B7%AE%E5%88%86)
 
 **範例**
 ![trcCalculateDifference](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/trcCalculateDifference.png)
@@ -306,6 +310,9 @@
 預設值：目前所在路徑  
 指定方式為`-outPath 路徑` ex: -outPath C:\Users\User\Desktop\TRCProgram\
 
+**輸入檔案範例**     
+[合併製版數登記表範例檔案](https://github.com/vincent87720/TRC/tree/ver2.0/assets/exampleInputFile/%E5%90%88%E4%BD%B5%E8%A3%BD%E7%89%88%E6%95%B8%E7%99%BB%E8%A8%98%E8%A1%A8)
+
 **範例**
 ![trcMergeCourse](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/trcMergeCourse.png)
 
@@ -364,6 +371,9 @@
 -  **-outPath** 指定輸出檔案路徑(點擊右鍵>內容>位置，可得知檔案位置)，若檔案與trc.exe同目錄則無需指定  
 預設值：目前所在路徑  
 指定方式為`-outPath 路徑` ex: -outPath C:\Users\User\Desktop\TRCProgram\
+
+**輸入檔案範例**     
+[合併數位課綱資料範例檔案](https://github.com/vincent87720/TRC/tree/ver2.0/assets/exampleInputFile/%E5%90%88%E4%BD%B5%E6%95%B8%E4%BD%8D%E8%AA%B2%E7%B6%B1%E8%B3%87%E6%96%99)
 
 **範例**
 ![trcMergeVideo](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/trcMergeVideo.png)
