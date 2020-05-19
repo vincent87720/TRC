@@ -106,12 +106,17 @@ func (f *flags) setMergeVideoFlag() (err error) {
 	}
 	f.svInputFile = make([]string, 3)
 	f.svOutputFile = make([]string, 3)
+	f.svTeacherFile = make([]string, 3)
 	f.mergeVideoFlagSet.StringVar(&f.svInputFile[0], "inPath", path+"\\", "輸入檔案路徑")
 	f.mergeVideoFlagSet.StringVar(&f.svInputFile[1], "inName", "數位課綱.xlsx", "輸入檔案名稱")
 	f.mergeVideoFlagSet.StringVar(&f.svInputFile[2], "inSheet", "工作表", "輸入工作表名稱")
 	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[0], "outPath", path+"\\", "輸出檔案路徑")
 	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[1], "outName", "[MERGENCE]數位課綱.xlsx", "輸出檔案名稱")
 	f.mergeVideoFlagSet.StringVar(&f.svOutputFile[2], "outSheet", "工作表", "輸出工作表名稱")
+	f.mergeVideoFlagSet.StringVar(&f.svTeacherFile[0], "tfPath", path+"\\", "設定教師名單檔案路徑")
+	f.mergeVideoFlagSet.StringVar(&f.svTeacherFile[1], "tfName", "教師名單.xlsx", "設定教師名單檔案名稱")
+	f.mergeVideoFlagSet.StringVar(&f.svTeacherFile[2], "tfSheet", "工作表", "設定教師名單工作表名稱")
+	f.mergeVideoFlagSet.BoolVar(&f.tfile, "tfile", false, "使用教師名單合併")
 	f.mergeVideoFlagSet.BoolVar(&f.help, "help", false, "Usage")
 	return nil
 }

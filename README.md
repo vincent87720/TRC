@@ -322,7 +322,7 @@
 
 **規則**
 
-- 數位課綱資料表須包含**教師姓名、科目序號、科目名稱**及**影片問題**欄位
+- 數位課綱資料表須包含**教師姓名、所屬單位、科目序號、科目名稱**及**影片問題**欄位
 
 - 檔案格式必須為.xlsx
 
@@ -343,6 +343,15 @@
 - 需指定-inName、-inSheet、-inPath參數
 
 - 輸入指令`trc merge video`+參數即可計算所有檔案
+
+
+**使用教師名單檔案填入所屬單位**
+
+- 需指定-tfile參數
+
+- 教師資料檔名須設為**教師名單.xlsx**
+
+- 輸入指令`trc merge video -tfile`+參數即可合併檔案
 
   
 
@@ -371,6 +380,22 @@
 -  **-outPath** 指定輸出檔案路徑(點擊右鍵>內容>位置，可得知檔案位置)，若檔案與trc.exe同目錄則無需指定  
 預設值：目前所在路徑  
 指定方式為`-outPath 路徑` ex: -outPath C:\Users\User\Desktop\TRCProgram\
+
+- -**tfile** 使用教師名單檔案填入所屬單位  
+預設值：false  
+指定方式為輸入-tfile
+
+- -**tfName** 指定教師名單檔案名稱  
+預設值：數位課綱.xlsx  
+指定方式為`-inName 檔案名稱.xlsx` ex: -inName 教師名單.xlsx
+
+-  **-tfSheet** 指定教師名單檔案工作表  
+預設值：工作表  
+指定方式為`-inSheet 工作表名稱` ex: -inSheet 工作表
+
+-  **-tfPath** 指定教師名單檔案路徑(點擊右鍵>內容>位置，可得知檔案位置)，若檔案與trc.exe同目錄則無需指定  
+預設值：目前所在路徑  
+指定方式為`-inPath 路徑` ex: -inPath C:\Users\User\Desktop\TRCProgram\
 
 **輸入檔案範例**     
 [合併數位課綱資料範例檔案](https://github.com/vincent87720/TRC/tree/ver2.0/assets/exampleInputFile/%E5%90%88%E4%BD%B5%E6%95%B8%E4%BD%8D%E8%AA%B2%E7%B6%B1%E8%B3%87%E6%96%99)

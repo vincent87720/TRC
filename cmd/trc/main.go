@@ -108,6 +108,7 @@ type file struct {
 //svFile 數位課綱檔案
 type svFile struct {
 	file
+	cdpCol       int                         //開課單位編號欄位(departmentID)
 	cidCol       int                         //課程編號欄位(courseID)
 	csnCol       int                         //課程名稱欄位(courseName)
 	pocCol       int                         //影片問題欄位(problemOfCourse)
@@ -212,8 +213,10 @@ type flags struct {
 	downloadSVOutputFile []string
 
 	//merge syllabus video parameter
-	svInputFile  []string
-	svOutputFile []string
+	tfile         bool
+	svInputFile   []string
+	svOutputFile  []string
+	svTeacherFile []string //-teacher
 
 	//merge course data parameter
 	cdInputFile  []string

@@ -606,6 +606,44 @@ func mergeSyllabusVideo(f *flags) (err error) {
 	quit <- 1
 	fmt.Println("\r> Splitting have completed")
 
+	if f.tfile {
+		//若使用教師名單檔案匯入所屬單位
+		var teacherFile thFile
+		teacherFile.setFile(f.svTeacherFile[0], f.svTeacherFile[1], f.svTeacherFile[2])
+		go spinner("Teacher file is loading...", 80*time.Millisecond, quit)
+		err = teacherFile.readRawData()
+		if err != nil {
+			quit <- 1
+			return err
+		}
+		err = teacherFile.groupByTeacher()
+		if err != nil {
+			quit <- 1
+			return err
+		}
+		quit <- 1
+		fmt.Println("\r> Loading teacher file have completed")
+
+		go spinner("Teacher info is matching...", 80*time.Millisecond, quit)
+		err = inputFile.matchTeacherInfoFile(teacherFile)
+		if err != nil {
+			quit <- 1
+			return err
+		}
+		quit <- 1
+		fmt.Println("\r> Matching teacher info have completed")
+	} else {
+		//使用inputFile檔案內的所屬單位合併
+		go spinner("Teacher info is matching...", 80*time.Millisecond, quit)
+		err = inputFile.matchTeacherInfo()
+		if err != nil {
+			quit <- 1
+			return err
+		}
+		quit <- 1
+		fmt.Println("\r> Matching teacher info have completed")
+	}
+
 	go spinner("Files are exporting...", 80*time.Millisecond, quit)
 	err = inputFile.transportToSlice()
 	if err != nil {

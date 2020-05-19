@@ -36,6 +36,10 @@ func (svf *svFile) groupByTeacher() (err error) {
 	if err != nil {
 		return err
 	}
+	err = svf.findCol("所屬單位", &svf.cdpCol)
+	if err != nil {
+		return err
+	}
 	err = svf.findCol("科目序號", &svf.cidCol)
 	if err != nil {
 		return err
@@ -70,10 +74,46 @@ func (svf *svFile) groupByTeacher() (err error) {
 				course: course{
 					courseID:   value[svf.cidCol],
 					courseName: value[svf.csnCol],
+					department: department{
+						departmentName: value[svf.cdpCol],
+					},
 				},
 				problemOfCourse: value[svf.pocCol],
 			}
 			svf.gbtd[t] = append(svf.gbtd[t], c)
+		}
+	}
+	return nil
+}
+
+//matchTeacherInfo 使用原本svFile檔案內的所屬單位進行教師比對合併
+func (svf *svFile) matchTeacherInfo() (err error) {
+	for key, value := range svf.gbtd {
+		t := teacher{
+			teacherName: key.teacherName,
+			department: department{
+				departmentName: value[0].course.department.departmentName,
+			},
+		}
+		delete(svf.gbtd, key) //必須先刪除再加入，否則有可能誤刪
+		svf.gbtd[t] = value
+	}
+	return nil
+}
+
+//matchTeacherInfoFile 使用額外輸入的teacherFile檔案進行教師比對合併
+func (svf *svFile) matchTeacherInfoFile(teacherFile thFile) (err error) {
+	for key, value := range svf.gbtd {
+		if len(teacherFile.teacherMap[key.teacherName]) > 0 {
+
+			t := teacher{
+				teacherName: key.teacherName,
+				department: department{
+					departmentName: teacherFile.teacherMap[key.teacherName][0].department.departmentName,
+				},
+			}
+			delete(svf.gbtd, key) //必須先刪除再加入，否則有可能誤刪
+			svf.gbtd[t] = value
 		}
 	}
 	return nil
@@ -96,7 +136,7 @@ func (svf *svFile) transportToSlice() (err error) {
 		//將rowNum列加入到svf.mergedXi中
 		for i := 0; i < rowNum; i++ {
 			tempXi := make([]string, 0)
-			tempXi = append(tempXi, key.teacherName)
+			tempXi = append(tempXi, key.teacherName, key.department.departmentName)
 
 			//每列只能放9個，多的給下一圈執行
 			for j := 0; j < 9; j++ {
@@ -148,7 +188,7 @@ func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
 		return err
 	}
 
-	for i := 66; i < 66+svf.maxCourseNum*3; i++ {
+	for i := 67; i < 67+svf.maxCourseNum*3; i++ {
 		if i < 91 {
 			mark = string(i)
 		} else if i < 117 {
@@ -160,19 +200,19 @@ func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
 		}
 
 		switch i % 3 {
-		case 0:
+		case 1:
 			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorE9E7D6)
 			if err != nil {
 				err = errors.WithStack(err)
 				return err
 			}
-		case 1:
+		case 2:
 			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorE0E4D6)
 			if err != nil {
 				err = errors.WithStack(err)
 				return err
 			}
-		case 2:
+		case 0:
 			err := xlsx.SetColStyle(outputFile.sheetName, mark, fillColorDADCD2)
 			if err != nil {
 				err = errors.WithStack(err)
@@ -183,7 +223,7 @@ func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
 
 	//設定第一列
 	title := make([]string, 0)
-	title = append(title, "授課教師")
+	title = append(title, "授課教師", "所屬單位")
 	for i := 0; i < svf.maxCourseNum; i++ {
 		title = append(title, "科目名稱", "科目序號", "影片問題")
 	}
