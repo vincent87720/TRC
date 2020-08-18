@@ -3,7 +3,7 @@
 package main
 
 import (
-	"NEWTRC/logging"
+	"TRC/pkg/logging"
 	"bufio"
 	"flag"
 	"fmt"

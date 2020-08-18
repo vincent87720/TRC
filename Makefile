@@ -7,7 +7,7 @@ mksyso:
 	go generate TRC\cmd\trc
 
 build:
-	go build -o .\bin\trc.exe TRC\cmd\trc
+	go build -o TRC\bin\trc.exe TRC\cmd\trc
 
 cpbin:
 	cp bin\trc.exe test

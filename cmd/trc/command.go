@@ -65,8 +65,8 @@ func (cmdSet *commandSet) layer2CommandUsage(layer1command string) {
 		for _, cmd := range cmds {
 			fmt.Printf("  %s [<args>]\t%s\n", cmd.commandString, cmd.commandAction)
 			if cmd.flagSet != nil {
-				for key, value := range cmd.flagSet.GetFlags() {
-					fmt.Println("        -" + key + " " + value.Usage)
+				for i := 0; i < cmd.flagSet.NFlag(); i++ {
+					fmt.Println(cmd.flagSet.Arg(i))
 				}
 			}
 		}
