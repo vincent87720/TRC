@@ -21,7 +21,7 @@ func (f *file) fillSliceLength(length int) (err error) {
 		err = errors.WithStack(fmt.Errorf("dataRows has no data"))
 		return err
 	}
-	for index := range f.dataRows {
+	for index, _ := range f.dataRows {
 		for len(f.dataRows[index]) < length {
 			f.dataRows[index] = append(f.dataRows[index], "")
 		}

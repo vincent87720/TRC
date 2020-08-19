@@ -190,13 +190,13 @@ func (svf *svFile) exportDataToExcel(outputFile file) (err error) {
 
 	for i := 67; i < 67+svf.maxCourseNum*3; i++ {
 		if i < 91 {
-			mark = string(i)
+			mark = string(rune(i))
 		} else if i < 117 {
-			mark = "A" + string(i-26)
+			mark = "A" + string(rune(i-26))
 		} else if i < 143 {
-			mark = "B" + string(i-26*2)
+			mark = "B" + string(rune(i-26*2))
 		} else if i < 169 {
-			mark = "C" + string(i-26*3)
+			mark = "C" + string(rune(i-26*3))
 		}
 
 		switch i % 3 {
