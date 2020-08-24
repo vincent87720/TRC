@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/lxn/walk"
@@ -33,6 +34,11 @@ func RunMainWindow() {
 	font := Font{Family: "Microsoft JhengHei", PointSize: 12}
 
 	var mw *walk.MainWindow
+
+	r, err := regexp.Compile(`(.*\\)([^\\]*.xlsx)`)
+	if err != nil {
+		log.Print(err)
+	}
 
 	if _, err := (MainWindow{
 		AssignTo:   &mw,
@@ -91,7 +97,17 @@ func RunMainWindow() {
 							if cmd, err := RunSplitScoreAlertDialog(mw, fi); err != nil {
 								log.Print(err)
 							} else if cmd == walk.DlgCmdOK {
-
+								var masterFile saFile
+								var templateFile file
+								var teacherFile thFile
+								var outputFile file
+								masterPathXi := r.FindStringSubmatch(fi.MasterPath)
+								teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
+								templatePathXi := r.FindStringSubmatch(fi.TemplatePath)
+								masterFile.setFile(masterPathXi[1], masterPathXi[2], fi.MasterSheet)
+								templateFile.setFile(templatePathXi[1], templatePathXi[2], fi.TemplateSheet)
+								teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
+								go SplitScoreAlertData(masterFile, templateFile, teacherFile, outputFile)
 							}
 						},
 					},

@@ -9,7 +9,7 @@ import (
 )
 
 //SplitScoreAlertData 分割預警總表，取得teacherFile資訊作為檔名，並以templateFile為模板另存至outputFile的路徑
-func (saf *saFile) SplitScoreAlertData(inputFile saFile, templateFile file, teacherFile thFile, outputFile file) (err error) {
+func SplitScoreAlertData(inputFile saFile, templateFile file, teacherFile thFile, outputFile file) (err error) {
 	err = inputFile.readRawData()
 	if err != nil {
 		return err
