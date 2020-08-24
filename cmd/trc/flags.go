@@ -15,6 +15,11 @@ func (f *flags) initFlag() (err error) {
 		flag.BoolVar(&f.help, "help", false, "Usage")
 	}
 
+	f.startGuiFlagSet = flag.NewFlagSet("start gui", flag.ExitOnError)
+	err = f.startGuiFlag()
+	if err != nil {
+		return nil
+	}
 	f.downloadVideoFlagSet = flag.NewFlagSet("download video", flag.ExitOnError)
 	err = f.setDownloadVideoFlag()
 	if err != nil {
@@ -40,6 +45,12 @@ func (f *flags) initFlag() (err error) {
 	if err != nil {
 		return nil
 	}
+	return nil
+}
+
+func (f *flags) startGuiFlag() (err error) {
+
+	f.startGuiFlagSet.BoolVar(&f.help, "help", false, "Usage")
 	return nil
 }
 

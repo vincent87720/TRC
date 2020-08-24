@@ -231,6 +231,7 @@ type flags struct {
 	//calculate difference parameter
 	readAllFilesInDir bool
 
+	startGuiFlagSet        *flag.FlagSet
 	downloadVideoFlagSet   *flag.FlagSet
 	splitScoreAlertFlagSet *flag.FlagSet
 	mergeVideoFlagSet      *flag.FlagSet

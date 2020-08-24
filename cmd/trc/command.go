@@ -82,6 +82,17 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 		cmdSet.layer1CommandUsage()
 	} else {
 		switch os.Args[1] {
+		case "start":
+			if len(os.Args) <= 2 || f.help {
+				cmdSet.layer2CommandUsage(os.Args[1])
+			} else {
+				switch os.Args[2] {
+				case "gui":
+					RunMainWindow()
+				default:
+					cmdSet.layer2CommandUsage(os.Args[1])
+				}
+			}
 		case "download":
 			if len(os.Args) <= 2 || f.help {
 				cmdSet.layer2CommandUsage(os.Args[1])
