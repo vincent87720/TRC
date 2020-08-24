@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Luxurioust/excelize"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/pkg/errors"
 )
 

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/Luxurioust/excelize"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -3,7 +3,6 @@
 package main
 
 import (
-	"TRC/pkg/logging"
 	"bufio"
 	"flag"
 	"fmt"
@@ -11,7 +10,7 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/Luxurioust/excelize"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/fatih/color"
 )
 
@@ -298,10 +297,11 @@ func manualMode(trcCmd *commandSet, f *flags) (err error) {
 }
 
 func main() {
+	initLogging()
 	var f flags
 	err := f.initFlag()
 	if err != nil {
-		logging.Error.Printf("%+v\n", err)
+		Error.Printf("%+v\n", err)
 	}
 
 	var trcCmd commandSet
@@ -319,7 +319,7 @@ func main() {
 
 	err = selectMode(&trcCmd, &f)
 	if err != nil {
-		logging.Error.Printf("%+v\n", err)
+		Error.Printf("%+v\n", err)
 	}
 
 	//合併數位課綱

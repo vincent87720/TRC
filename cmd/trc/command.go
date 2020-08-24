@@ -1,7 +1,6 @@
 package main
 
 import (
-	"TRC/pkg/logging"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -91,7 +90,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 				case "video":
 					err := f.downloadVideoFlagSet.Parse(os.Args[3:])
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 					}
 
 					if f.help == true {
@@ -101,7 +100,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 
 					if f.youtubeAPIKey == "" {
 						err = errors.WithStack(fmt.Errorf("youtubeAPIKey missing"))
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 						fmt.Println("\rError: 沒有指定youtubeAPIKey，使用-key指定參數")
 						fmt.Println("\r> Downloading have failed")
 					} else {
@@ -109,13 +108,13 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 						if f.appendVideoInfo {
 							err = appendSyllabusVideoInfo(f)
 							if err != nil {
-								logging.Error.Printf("%+v\n", err)
+								Error.Printf("%+v\n", err)
 								fmt.Println("\r> Downloading have failed")
 							}
 						} else {
 							err = getSyllabusVideo(f)
 							if err != nil {
-								logging.Error.Printf("%+v\n", err)
+								Error.Printf("%+v\n", err)
 								fmt.Println("\r> Downloading have failed")
 							}
 						}
@@ -125,7 +124,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					fmt.Println(">> GetTeacherData")
 					err := getTeacher()
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 						fmt.Println("\r> Downloading have failed")
 					}
 				default:
@@ -142,7 +141,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 				case "scoreAlert":
 					err := f.splitScoreAlertFlagSet.Parse(os.Args[3:])
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 					}
 					if f.help {
 						f.splitScoreAlertFlagSet.Usage()
@@ -152,7 +151,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					fmt.Println(">> SplitScoreAlertFile")
 					err = splitScoreAlertFile(f)
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 						fmt.Println("\r> Splitting have failed")
 					}
 
@@ -170,7 +169,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 				case "video":
 					err := f.mergeVideoFlagSet.Parse(os.Args[3:])
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 					}
 					if f.help {
 						f.mergeVideoFlagSet.Usage()
@@ -180,13 +179,13 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					fmt.Println(">> MergeSyllabusVideoLink")
 					err = mergeSyllabusVideo(f)
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 						fmt.Println("\r> Merging have failed")
 					}
 				case "course":
 					err := f.mergeCourseFlagSet.Parse(os.Args[3:])
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 					}
 					if f.help {
 						f.mergeCourseFlagSet.Usage()
@@ -196,7 +195,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					fmt.Println(">> MergeCourseData")
 					err = mergeCourseData(f)
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 						fmt.Println("\r> Merging have failed")
 					}
 				default:
@@ -214,7 +213,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					err := f.calcDifferentFlagSet.Parse(os.Args[3:])
 
 					if err != nil {
-						logging.Error.Printf("%+v\n", err)
+						Error.Printf("%+v\n", err)
 					}
 					if f.help {
 						f.calcDifferentFlagSet.Usage()
@@ -226,12 +225,12 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 					if f.readAllFilesInDir {
 						err := calcDifferenceAllFile(f)
 						if err != nil {
-							logging.Error.Printf("%+v\n", err)
+							Error.Printf("%+v\n", err)
 						}
 					} else {
 						err := calcDifference(f)
 						if err != nil {
-							logging.Error.Printf("%+v\n", err)
+							Error.Printf("%+v\n", err)
 							fmt.Println("\r> Calculating have failed")
 						}
 					}
@@ -818,7 +817,7 @@ func calcDifferenceAllFile(f *flags) (err error) {
 		err = inputFile.DifferenceCalculate(outputFile)
 		if err != nil {
 			fmt.Println("\r>[" + strconv.Itoa(loopCount) + "][Fail]\t\t" + xlsxName)
-			logging.Error.Printf("%+v\n", err)
+			Error.Printf("%+v\n", err)
 		} else {
 			fmt.Println("\r>[" + strconv.Itoa(loopCount) + "][Success]\t" + xlsxName)
 		}
