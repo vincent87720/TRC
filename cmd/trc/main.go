@@ -1,4 +1,4 @@
-//go:generate goversioninfo
+//go:generate goversioninfo -manifest=../../tools/goversioninfo/goversioninfo.exe.manifest
 
 package main
 
@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"io/ioutil"
 	"strings"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
@@ -297,8 +298,55 @@ func manualMode(trcCmd *commandSet, f *flags) (err error) {
 	}
 }
 
-func main() {
+func createDir(){
+	hasDirAssets := false
+	hasDirLogs := false
+	hasDirGuiImage := false
+
+	allFiles, err := ioutil.ReadDir("./")
+	if err != nil {
+		Error.Printf("%+v\n", err)
+	}
+
+	for _, fi := range allFiles {
+		if fi.Name() == "assets"{
+			hasDirAssets = true
+		}
+		if fi.Name() == "logs"{
+			hasDirLogs = true
+		}
+		if fi.Name() == "guiImage"{
+			hasDirGuiImage = true
+		}
+	}
+
+	if !hasDirAssets {
+		err := os.MkdirAll("assets", os.ModeDir)
+		if err != nil {
+			Error.Printf("%+v\n", err)
+		}
+	}
+	if !hasDirLogs {
+		err := os.MkdirAll("assets/logs", os.ModeDir)
+		if err != nil {
+			Error.Printf("%+v\n", err)
+		}
+	}
+	if !hasDirGuiImage {
+		err := os.MkdirAll("assets/guiImage", os.ModeDir)
+		if err != nil {
+			Error.Printf("%+v\n", err)
+		}
+	}
+}
+
+func init(){
+	createDir()
+	ExportAssets()
 	initLogging()
+}
+
+func main() {
 	var f flags
 	err := f.initFlag()
 	if err != nil {

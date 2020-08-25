@@ -24,9 +24,9 @@ func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitFileInfo) (int, error) {
 	labelFont := Font{Family: "Microsoft JhengHei", PointSize: 11}
 
 	return Dialog{
-		AssignTo:   &dlg,
-		Title:      "Split",
-		Icon:       "../../assets/icon/Those_Icons-split-32.png",
+		AssignTo: &dlg,
+		Title:    "Split",
+		Icon:       "./assets/guiImage/Those_Icons-split-32.png",
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Font:       Font{Family: "Microsoft JhengHei", PointSize: 9},
 		DataBinder: DataBinder{

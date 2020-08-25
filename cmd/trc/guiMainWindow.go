@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/png"
 	"log"
 	"os"
 	"regexp"
@@ -29,7 +32,7 @@ type SplitFileInfo struct {
 	TemplateSheet string
 }
 
-func RunMainWindow() {
+func RunMainWindow(){
 
 	font := Font{Family: "Microsoft JhengHei", PointSize: 12}
 
@@ -43,7 +46,7 @@ func RunMainWindow() {
 	if _, err := (MainWindow{
 		AssignTo:   &mw,
 		Title:      "TRC",
-		Icon:       "../../assets/icon/blockchain-blueblue.png",
+		Icon:       "./assets/guiImage/blockchain-blueblue.png",
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Size:       Size{1000, 200},
 		MinSize:    Size{1000, 200},
@@ -55,7 +58,7 @@ func RunMainWindow() {
 					//download
 					PushButton{
 						Text:    "Download Teacher",
-						Image:   "../../assets/icon/Those_Icons-download-32.png",
+						Image:   "./assets/guiImage/Those_Icons-download-32.png",
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
@@ -70,7 +73,7 @@ func RunMainWindow() {
 					//download
 					PushButton{
 						Text:    "Download Video   ",
-						Image:   "../../assets/icon/Those_Icons-download-32.png",
+						Image:   "./assets/guiImage/Those_Icons-download-32.png",
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
@@ -89,7 +92,7 @@ func RunMainWindow() {
 					//split
 					PushButton{
 						Text:    "Split ScoreAlert",
-						Image:   "../../assets/icon/Those_Icons-split-32.png",
+						Image:   "./assets/guiImage/Those_Icons-split-32.png",
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
@@ -119,7 +122,7 @@ func RunMainWindow() {
 					//calculate
 					PushButton{
 						Text:    "Calculate Difference",
-						Image:   "../../assets/icon/Pixel_Perfect-calculate-32.png",
+						Image:   "./assets/guiImage/Pixel_Perfect-calculate-32.png",
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
@@ -138,7 +141,7 @@ func RunMainWindow() {
 					//merge
 					PushButton{
 						Text:    "Merge Course",
-						Image:   "../../assets/icon/Those_Icons-merge-32.png",
+						Image:   "./assets/guiImage/Those_Icons-merge-32.png",
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
@@ -153,7 +156,7 @@ func RunMainWindow() {
 					//merge
 					PushButton{
 						Text:    "Merge Video  ",
-						Image:   "../../assets/icon/Those_Icons-merge-32.png",
+						Image:   "./assets/guiImage/Those_Icons-merge-32.png",
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
@@ -170,6 +173,39 @@ func RunMainWindow() {
 	}.Run()); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func ExportAssets() {
+
+	fileXi, err := AssetDir("")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, value := range fileXi {
+		xi, err := Asset(value)
+		if err != nil {
+			fmt.Println(err)
+		}
+		// convert []byte to image for saving to file
+		img, _, _ := image.Decode(bytes.NewReader(xi))
+
+		//save the imgByte to file
+		out, err := os.Create("./assets/" + value)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		err = png.Encode(out, img)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
 }
 
 func OnOpenFileButtonClicked(owner walk.Form, filePath *walk.LineEdit, selector *walk.ComboBox) {

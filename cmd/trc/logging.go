@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -13,27 +12,8 @@ var (
 )
 
 func initLogging() {
-	hasDir := false
 
-	allFiles, err := ioutil.ReadDir("./")
-	if err != nil {
-		log.Fatalln("讀取目錄失敗：", err)
-	}
-
-	for _, fi := range allFiles {
-		if fi.Name() == "logs" {
-			hasDir = true
-		}
-	}
-
-	if !hasDir {
-		err := os.Mkdir("logs", os.ModeDir)
-		if err != nil {
-			log.Fatalln("創建logs目錄失敗：", err)
-		}
-	}
-
-	errFile, err := os.OpenFile(".\\logs\\errors.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	errFile, err := os.OpenFile(".\\assets\\logs\\errors.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalln("開啟log文件失敗：", err)
 	}
