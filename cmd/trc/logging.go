@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 )
 
 var (
@@ -12,8 +13,12 @@ var (
 )
 
 func initLogging() {
+	err := os.MkdirAll(filepath.FromSlash(INITPATH+"/assets/logs"), os.ModeDir)
+	if err != nil {
+		Error.Printf("%+v\n", err)
+	}
 
-	errFile, err := os.OpenFile(".\\assets\\logs\\errors.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	errFile, err := os.OpenFile(filepath.FromSlash(INITPATH+"/assets/logs/errors.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalln("開啟log文件失敗：", err)
 	}

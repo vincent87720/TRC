@@ -6,13 +6,18 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/user"
-	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/fatih/color"
+)
+
+var (
+	INITPATH string
 )
 
 type college struct {
@@ -298,52 +303,20 @@ func manualMode(trcCmd *commandSet, f *flags) (err error) {
 	}
 }
 
-func createDir(){
-	hasDirAssets := false
-	hasDirLogs := false
-	hasDirGuiImage := false
-
-	allFiles, err := ioutil.ReadDir("./")
+func setInitialPath() {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		Error.Printf("%+v\n", err)
+		log.Fatal(err)
 	}
-
-	for _, fi := range allFiles {
-		if fi.Name() == "assets"{
-			hasDirAssets = true
-		}
-		if fi.Name() == "logs"{
-			hasDirLogs = true
-		}
-		if fi.Name() == "guiImage"{
-			hasDirGuiImage = true
-		}
-	}
-
-	if !hasDirAssets {
-		err := os.MkdirAll("assets", os.ModeDir)
-		if err != nil {
-			Error.Printf("%+v\n", err)
-		}
-	}
-	if !hasDirLogs {
-		err := os.MkdirAll("assets/logs", os.ModeDir)
-		if err != nil {
-			Error.Printf("%+v\n", err)
-		}
-	}
-	if !hasDirGuiImage {
-		err := os.MkdirAll("assets/guiImage", os.ModeDir)
-		if err != nil {
-			Error.Printf("%+v\n", err)
-		}
-	}
+	INITPATH = filepath.ToSlash(dir)
 }
 
-func init(){
-	createDir()
-	ExportAssets()
-	initLogging()
+func init() {
+	setInitialPath()
+	exportAssets()
+	if _, err := os.Stat(INITPATH + "/assets/logs"); os.IsNotExist(err) {
+		initLogging()
+	}
 }
 
 func main() {

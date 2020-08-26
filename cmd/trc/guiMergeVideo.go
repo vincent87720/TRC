@@ -1,32 +1,38 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunMergeVideoDialog(owner walk.Form) (int, error) {
+func RunMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
-	var masterFilePath *walk.LineEdit
-	var teacherFilePath *walk.LineEdit
-	var templateFilePath *walk.LineEdit
+	var db *walk.DataBinder
 
-	var masterSheetSelector *walk.ComboBox
+	var inputFilePath *walk.LineEdit
+	var teacherFilePath *walk.LineEdit
+
+	var inputSheetSelector *walk.ComboBox
 	var teacherSheetSelector *walk.ComboBox
-	var templateSheetSelector *walk.ComboBox
 
 	labelFont := Font{Family: "Microsoft JhengHei", PointSize: 11}
 
 	return Dialog{
-		AssignTo: &dlg,
-		Title:    "Split",
-		Icon:          "./assets/guiImage/Those_Icons-split-32.png",
-		Background:    SolidColorBrush{Color: walk.RGB(255, 255, 255)},
-		Font:          Font{Family: "Microsoft JhengHei", PointSize: 9},
+		AssignTo:   &dlg,
+		Title:      "MergeSyllabusVideoData",
+		Icon:       iconFilePath,
+		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
+		Font:       Font{Family: "Microsoft JhengHei", PointSize: 9},
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			Name:           "mergeVideoInfo",
+			DataSource:     fi,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
 		MinSize:       Size{300, 300},
@@ -36,70 +42,69 @@ func RunMergeVideoDialog(owner walk.Form) (int, error) {
 				Layout: Grid{Columns: 4},
 				Children: []Widget{
 					Label{
-						Text: "預警總表",
+						Text: "數位課綱",
 						Font: labelFont,
 					},
 					LineEdit{
-						AssignTo: &masterFilePath,
+						AssignTo: &inputFilePath,
+						Text:     Bind("InputPath"),
 						MinSize:  Size{250, 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, masterFilePath, masterSheetSelector)
+							OnOpenFileButtonClicked(owner, inputFilePath, inputSheetSelector)
 						},
 					},
 					ComboBox{
-						AssignTo:      &masterSheetSelector,
+						AssignTo:      &inputSheetSelector,
 						Editable:      false,
-						BindingMember: "key",
+						BindingMember: "Name",
 						DisplayMember: "Name",
+						Value:         Bind("InputSheet"),
 					},
 
 					Label{
-						Text: "教師名單",
-						Font: labelFont,
+						Text:    "教師名單",
+						Font:    labelFont,
+						Visible: Bind("tfile.Checked"),
 					},
 					LineEdit{
 						AssignTo: &teacherFilePath,
+						Text:     Bind("TeacherPath"),
 						MinSize:  Size{250, 0},
 						ReadOnly: true,
+						Visible:  Bind("tfile.Checked"),
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
 							OnOpenFileButtonClicked(owner, teacherFilePath, teacherSheetSelector)
 						},
+						Visible: Bind("tfile.Checked"),
 					},
 					ComboBox{
 						AssignTo:      &teacherSheetSelector,
 						Editable:      false,
-						BindingMember: "key",
+						BindingMember: "Name",
 						DisplayMember: "Name",
+						Value:         Bind("TeacherSheet"),
+						Visible:       Bind("tfile.Checked"),
 					},
-
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
 					Label{
-						Text: "空白分表",
-						Font: labelFont,
+						Text: "使用教師名單檔案匯入所屬單位",
 					},
-					LineEdit{
-						AssignTo: &templateFilePath,
-						MinSize:  Size{250, 0},
-						ReadOnly: true,
+					CheckBox{
+						Name:    "tfile",
+						Checked: Bind("TFile"),
 					},
-					PushButton{
-						Text: "選擇檔案",
-						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, templateFilePath, templateSheetSelector)
-						},
-					},
-					ComboBox{
-						AssignTo:      &templateSheetSelector,
-						Editable:      false,
-						BindingMember: "key",
-						DisplayMember: "Name",
-					},
+					HSpacer{},
 				},
 			},
 			Composite{
@@ -110,14 +115,10 @@ func RunMergeVideoDialog(owner walk.Form) (int, error) {
 						AssignTo: &acceptPB,
 						Text:     "OK",
 						OnClicked: func() {
-							fmt.Println(masterFilePath.Text())
-							fmt.Println(teacherFilePath.Text())
-							fmt.Println(templateFilePath.Text())
-
-							fmt.Println(masterSheetSelector.Text())
-							fmt.Println(teacherSheetSelector.Text())
-							fmt.Println(templateSheetSelector.Text())
-
+							if err := db.Submit(); err != nil {
+								log.Print(err)
+								return
+							}
 							dlg.Accept()
 						},
 					},

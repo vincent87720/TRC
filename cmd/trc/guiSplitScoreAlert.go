@@ -7,7 +7,7 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitFileInfo) (int, error) {
+func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
@@ -24,9 +24,9 @@ func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitFileInfo) (int, error) {
 	labelFont := Font{Family: "Microsoft JhengHei", PointSize: 11}
 
 	return Dialog{
-		AssignTo: &dlg,
-		Title:    "Split",
-		Icon:       "./assets/guiImage/Those_Icons-split-32.png",
+		AssignTo:   &dlg,
+		Title:      "SplitScoreAlert",
+		Icon:       iconFilePath,
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Font:       Font{Family: "Microsoft JhengHei", PointSize: 9},
 		DataBinder: DataBinder{

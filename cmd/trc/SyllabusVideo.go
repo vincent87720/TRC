@@ -10,12 +10,63 @@ import (
 )
 
 //MergeSyllabusVideoData 合併數位課綱資料
-func (svf *svFile) MergeSyllabusVideoData(outputFile file) (err error) {
+func MergeSyllabusVideoData(inputFile file, outputFile file) (err error) {
+	fmt.Println(outputFile.filePath)
+
+	svf := svFile{
+		file: inputFile,
+	}
+
 	err = svf.readRawData()
 	if err != nil {
 		return err
 	}
 	err = svf.groupByTeacher()
+	if err != nil {
+		return err
+	}
+	err = svf.matchTeacherInfo()
+	if err != nil {
+		return err
+	}
+	err = svf.transportToSlice()
+	if err != nil {
+		return err
+	}
+	err = svf.exportDataToExcel(outputFile)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//MergeSyllabusVideoDataByList 使用教師名單合併數位課綱資料
+func MergeSyllabusVideoDataByList(inputFile file, outputFile file, teacherFile file) (err error) {
+	svf := svFile{
+		file: inputFile,
+	}
+
+	thf := thFile{
+		file: teacherFile,
+	}
+
+	err = svf.readRawData()
+	if err != nil {
+		return err
+	}
+	err = svf.groupByTeacher()
+	if err != nil {
+		return err
+	}
+	err = thf.readRawData()
+	if err != nil {
+		return err
+	}
+	err = thf.groupByTeacher()
+	if err != nil {
+		return err
+	}
+	err = svf.matchTeacherInfoFile(thf)
 	if err != nil {
 		return err
 	}

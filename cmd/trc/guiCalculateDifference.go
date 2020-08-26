@@ -7,7 +7,7 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunCalculateDifferenceDialog(owner walk.Form) (int, error) {
+func RunCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
@@ -22,9 +22,9 @@ func RunCalculateDifferenceDialog(owner walk.Form) (int, error) {
 	labelFont := Font{Family: "Microsoft JhengHei", PointSize: 11}
 
 	return Dialog{
-		AssignTo: &dlg,
-		Title:    "Split",
-		Icon:          "./assets/guiImage/Those_Icons-split-32.png",
+		AssignTo:      &dlg,
+		Title:         "CalculateDifference",
+		Icon:          iconFilePath,
 		Background:    SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Font:          Font{Family: "Microsoft JhengHei", PointSize: 9},
 		DefaultButton: &acceptPB,

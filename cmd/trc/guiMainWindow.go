@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
@@ -20,10 +22,20 @@ type DropDownItem struct { // Used in the ComboBox dropdown
 }
 
 type NormalFileInfo struct {
-	Path  string
-	Sheet string
+	InputPath  string
+	InputSheet string
 }
-type SplitFileInfo struct {
+
+type DownloadVideoInfo struct {
+	InputPath  string
+	InputSheet string
+	Year       string
+	Semester   string
+	Key        string
+	Append     bool
+}
+
+type SplitScoreAlertFileInfo struct {
 	MasterPath    string
 	MasterSheet   string
 	TeacherPath   string
@@ -32,7 +44,27 @@ type SplitFileInfo struct {
 	TemplateSheet string
 }
 
-func RunMainWindow(){
+type MergeVideoFileInfo struct {
+	InputPath    string
+	InputSheet   string
+	TeacherPath  string
+	TeacherSheet string
+	TFile        bool
+}
+
+type CalculateDifferenceInfo struct {
+	InputPath  string
+	InputSheet string
+	CalcAll    bool
+}
+
+func RunMainWindow() {
+
+	iconMain := filepath.FromSlash("assets/guiImage/blockchain-blueblue.png")
+	iconDownload := filepath.FromSlash("assets/guiImage/Those_Icons-download-32.png")
+	iconSplit := filepath.FromSlash("assets/guiImage/Those_Icons-split-32.png")
+	iconCalculate := filepath.FromSlash("assets/guiImage/Pixel_Perfect-calculate-32.png")
+	iconMerge := filepath.FromSlash("assets/guiImage/Those_Icons-merge-32.png")
 
 	font := Font{Family: "Microsoft JhengHei", PointSize: 12}
 
@@ -46,7 +78,7 @@ func RunMainWindow(){
 	if _, err := (MainWindow{
 		AssignTo:   &mw,
 		Title:      "TRC",
-		Icon:       "./assets/guiImage/blockchain-blueblue.png",
+		Icon:       iconMain,
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Size:       Size{1000, 200},
 		MinSize:    Size{1000, 200},
@@ -58,11 +90,11 @@ func RunMainWindow(){
 					//download
 					PushButton{
 						Text:    "Download Teacher",
-						Image:   "./assets/guiImage/Those_Icons-download-32.png",
+						Image:   iconDownload,
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
-							if cmd, err := RunDownloadTeacherDialog(mw); err != nil {
+							if cmd, err := RunDownloadTeacherDialog(mw, iconDownload); err != nil {
 								log.Print(err)
 							} else if cmd == walk.DlgCmdOK {
 
@@ -73,11 +105,12 @@ func RunMainWindow(){
 					//download
 					PushButton{
 						Text:    "Download Video   ",
-						Image:   "./assets/guiImage/Those_Icons-download-32.png",
+						Image:   iconDownload,
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
-							if cmd, err := RunDownloadVideoDialog(mw); err != nil {
+							fi := new(DownloadVideoInfo)
+							if cmd, err := RunDownloadVideoDialog(mw, fi, iconDownload); err != nil {
 								log.Print(err)
 							} else if cmd == walk.DlgCmdOK {
 
@@ -92,21 +125,23 @@ func RunMainWindow(){
 					//split
 					PushButton{
 						Text:    "Split ScoreAlert",
-						Image:   "./assets/guiImage/Those_Icons-split-32.png",
+						Image:   iconSplit,
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
-							fi := new(SplitFileInfo)
-							if cmd, err := RunSplitScoreAlertDialog(mw, fi); err != nil {
+							fi := new(SplitScoreAlertFileInfo)
+							if cmd, err := RunSplitScoreAlertDialog(mw, fi, iconSplit); err != nil {
 								log.Print(err)
 							} else if cmd == walk.DlgCmdOK {
-								var masterFile saFile
+								checkOutputDir()
+								var masterFile file
 								var templateFile file
-								var teacherFile thFile
+								var teacherFile file
 								var outputFile file
 								masterPathXi := r.FindStringSubmatch(fi.MasterPath)
 								teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
 								templatePathXi := r.FindStringSubmatch(fi.TemplatePath)
+								outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "", "")
 								masterFile.setFile(masterPathXi[1], masterPathXi[2], fi.MasterSheet)
 								templateFile.setFile(templatePathXi[1], templatePathXi[2], fi.TemplateSheet)
 								teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
@@ -122,11 +157,12 @@ func RunMainWindow(){
 					//calculate
 					PushButton{
 						Text:    "Calculate Difference",
-						Image:   "./assets/guiImage/Pixel_Perfect-calculate-32.png",
+						Image:   iconCalculate,
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
-							if cmd, err := RunCalculateDifferenceDialog(mw); err != nil {
+							fi := new(CalculateDifferenceInfo)
+							if cmd, err := RunCalculateDifferenceDialog(mw, fi, iconCalculate); err != nil {
 								log.Print(err)
 							} else if cmd == walk.DlgCmdOK {
 
@@ -141,11 +177,12 @@ func RunMainWindow(){
 					//merge
 					PushButton{
 						Text:    "Merge Course",
-						Image:   "./assets/guiImage/Those_Icons-merge-32.png",
+						Image:   iconMerge,
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
-							if cmd, err := RunMergeCourseDialog(mw); err != nil {
+							fi := new(NormalFileInfo)
+							if cmd, err := RunMergeCourseDialog(mw, fi, iconMerge); err != nil {
 								log.Print(err)
 							} else if cmd == walk.DlgCmdOK {
 
@@ -156,14 +193,32 @@ func RunMainWindow(){
 					//merge
 					PushButton{
 						Text:    "Merge Video  ",
-						Image:   "./assets/guiImage/Those_Icons-merge-32.png",
+						Image:   iconMerge,
 						Font:    font,
 						MinSize: Size{200, 50},
 						OnClicked: func() {
-							if cmd, err := RunMergeVideoDialog(mw); err != nil {
+							fi := new(MergeVideoFileInfo)
+							if cmd, err := RunMergeVideoDialog(mw, fi, iconMerge); err != nil {
 								log.Print(err)
 							} else if cmd == walk.DlgCmdOK {
+								checkOutputDir()
+								var inputFile file
+								var outputFile file
+								inputPathXi := r.FindStringSubmatch(fi.InputPath)
+								inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
+								outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "[MERGENCE]數位課綱.xlsx", "工作表")
+								fmt.Println(outputFile.filePath)
 
+								if fi.TFile {
+									var teacherFile file
+									teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
+									teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
+
+									go MergeSyllabusVideoDataByList(inputFile, outputFile, teacherFile)
+
+								} else {
+									go MergeSyllabusVideoData(inputFile, outputFile)
+								}
 							}
 						},
 					},
@@ -175,37 +230,76 @@ func RunMainWindow(){
 	}
 }
 
-func ExportAssets() {
+func exportAssets() {
+	if _, err := os.Stat(INITPATH + "/assets/guiImage"); os.IsNotExist(err) {
+		err = os.MkdirAll("assets/guiImage", os.ModeDir)
+		if err != nil {
+			Error.Printf("%+v\n", err)
+		}
+	}
 
-	fileXi, err := AssetDir("")
+	hasMainIcon := false
+	hasCalcIcon := false
+	hasDownloadIcon := false
+	hasMergeIcon := false
+	hasSplitIcon := false
+
+	allFiles, err := ioutil.ReadDir("assets/guiImage")
 	if err != nil {
-		fmt.Println(err)
+		Error.Printf("%+v\n", err)
 	}
 
-	for _, value := range fileXi {
-		xi, err := Asset(value)
-		if err != nil {
-			fmt.Println(err)
-		}
-		// convert []byte to image for saving to file
-		img, _, _ := image.Decode(bytes.NewReader(xi))
-
-		//save the imgByte to file
-		out, err := os.Create("./assets/" + value)
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		err = png.Encode(out, img)
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+	for _, fi := range allFiles {
+		if fi.Name() == "blockchain-blueblue.png" {
+			hasMainIcon = true
+		} else if fi.Name() == "Pixel_Perfect-calculate-32.png" {
+			hasCalcIcon = true
+		} else if fi.Name() == "Those_Icons-download-32.png" {
+			hasDownloadIcon = true
+		} else if fi.Name() == "Those_Icons-merge-32.png" {
+			hasMergeIcon = true
+		} else if fi.Name() == "Those_Icons-split-32.png" {
+			hasSplitIcon = true
 		}
 	}
 
+	if !hasMainIcon || !hasCalcIcon || !hasDownloadIcon || !hasMergeIcon || !hasSplitIcon {
+		fileXi, err := AssetDir("")
+		if err != nil {
+			Error.Printf("%+v\n", err)
+		}
+
+		for _, value := range fileXi {
+			xi, err := Asset(value)
+			if err != nil {
+				Error.Printf("%+v\n", err)
+			}
+			// convert []byte to image for saving to file
+			img, _, _ := image.Decode(bytes.NewReader(xi))
+
+			//save the imgByte to file
+			out, err := os.Create("./assets/" + value)
+
+			if err != nil {
+				Error.Printf("%+v\n", err)
+				os.Exit(1)
+			}
+
+			err = png.Encode(out, img)
+
+			if err != nil {
+				Error.Printf("%+v\n", err)
+				os.Exit(1)
+			}
+		}
+	}
+}
+
+func checkOutputDir() {
+	err := os.MkdirAll(INITPATH+"\\output", os.ModeDir)
+	if err != nil {
+		Error.Printf("%+v\n", err)
+	}
 }
 
 func OnOpenFileButtonClicked(owner walk.Form, filePath *walk.LineEdit, selector *walk.ComboBox) {
@@ -227,7 +321,7 @@ func OnOpenFileButtonClicked(owner walk.Form, filePath *walk.LineEdit, selector 
 
 	xlsx, err := excelize.OpenFile(dlg.FilePath)
 	if err != nil {
-		fmt.Println(err)
+		Error.Printf("%+v\n", err)
 	}
 	xlsxSht := xlsx.GetSheetMap()
 	for idx, val := range xlsxSht {
