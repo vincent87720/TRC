@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 )
 
+//Use"Info"and"Warning"to print a message on stdout, and use "Error" to log the message in errors.log
 var (
 	Info    *log.Logger
 	Warning *log.Logger
@@ -13,9 +15,11 @@ var (
 )
 
 func initLogging() {
-	err := os.MkdirAll(filepath.FromSlash(INITPATH+"/assets/logs"), os.ModeDir)
-	if err != nil {
-		Error.Printf("%+v\n", err)
+	if _, err := os.Stat(INITPATH + "/assets/logs"); os.IsNotExist(err) {
+		err := os.MkdirAll(filepath.FromSlash(INITPATH+"/assets/logs"), os.ModeDir)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	errFile, err := os.OpenFile(filepath.FromSlash(INITPATH+"/assets/logs/errors.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)

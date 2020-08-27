@@ -8,8 +8,37 @@ import (
 	"github.com/pkg/errors"
 )
 
-//SplitScoreAlertData 分割預警總表，取得teacherFile資訊作為檔名，並以templateFile為模板另存至outputFile的路徑
-func SplitScoreAlertData(inputFile file, templateFile file, teacherFile file, outputFile file) (err error) {
+// SplitScoreAlertData 分割預警總表
+// 使用教師名單(teacherFile)內的資訊建立檔名，以空白表格(templateFile)作為模板並另存至outputFile設定的路徑
+// Goroutine interface for GUI
+// For example:
+// 	var masterFile file
+// 	var templateFile file
+// 	var teacherFile file
+// 	var outputFile file
+//
+// 	masterFile.setFile("Your file path", "Your file name", "Your sheet name")
+// 	templateFile.setFile("Your file path", "Your file name", "Your sheet name")
+// 	teacherFile.setFile("Your file path", "Your file name", "Your sheet name")
+// 	outputFile.setFile("Your file path", "Your file name", "Your sheet name")
+//
+// 	errChan := make(chan error, 2)
+// 	exitChan := make(chan string, 2)
+// 	defer close(errChan)
+// 	defer close(exitChan)
+//
+// 	go SplitScoreAlertData(errChan, exitChan, masterFile, templateFile, teacherFile, outputFile)
+//
+// Loop:
+// 	for {
+// 		select {
+// 		case err := <-errChan:
+// 			Error.Printf("%+v\n", err)
+// 		case <-exitChan:
+// 			break Loop
+// 		}
+// 	}
+func SplitScoreAlertData(errChan chan error, exitChan chan string, inputFile file, templateFile file, teacherFile file, outputFile file) {
 	saf := saFile{
 		file: inputFile,
 	}
@@ -17,31 +46,45 @@ func SplitScoreAlertData(inputFile file, templateFile file, teacherFile file, ou
 		file: teacherFile,
 	}
 
-	err = saf.readRawData()
+	err := saf.readRawData()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = saf.groupByTeacher()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = thf.readRawData()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = thf.groupByTeacher()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = templateFile.readRawData()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = saf.exportDataToExcel(templateFile, thf, outputFile)
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
-	return nil
+
+	exitChan <- "exit"
+	return
 }
 
 //groupByTeacher 依照教師名稱將預警總表資料分群

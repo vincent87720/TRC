@@ -17,37 +17,83 @@ func (rp rapidPrintXi) Less(i, j int) bool { return rp[i].courseName < rp[j].cou
 func (rp rapidPrintXi) Swap(i, j int)      { rp[i], rp[j] = rp[j], rp[i] }
 func (rp rapidPrintXi) Sort()              { sort.Sort(rp) }
 
-//MergeRapidPrintData 剖析並合併開課資料
-func (rpf *rpFile) MergeRapidPrintData(outputFile file) (err error) {
-	err = rpf.readRawData()
+// MergeRapidPrintData 剖析並合併開課資料
+// Goroutine interface for GUI
+// For example:
+//
+//	var inputFile file
+// 	var outputFile file
+//
+// 	inputFile.setFile("Your file path", "Your file name", "Your sheet name")
+// 	outputFile.setFile("Your file path", "Your file name", "Your sheet name")
+//
+// 	errChan := make(chan error, 2)
+// 	exitChan := make(chan string, 2)
+// 	defer close(errChan)
+// 	defer close(exitChan)
+//
+// 	go MergeRapidPrintData(errChan, exitChan, inputFile, outputFile)
+//
+// Loop:
+//	for {
+// 		select {
+// 		case err := <-errChan:
+// 			fmt.Println(err)
+// 		case <-exitChan:
+// 			break Loop
+// 		}
+// 	}
+func MergeRapidPrintData(errChan chan error, exitChan chan string, inputFile file, outputFile file) {
+
+	rpf := rpFile{
+		file: inputFile,
+	}
+
+	err := rpf.readRawData()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = rpf.fillSliceLength(15)
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = rpf.findColumn()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = rpf.groupByTeacher()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = rpf.mergeData()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = rpf.transportToSlice()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = rpf.exportDataToExcel(outputFile)
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
-	return nil
+
+	exitChan <- "exit"
+	return
 }
 
 //findColumn 尋找欄位

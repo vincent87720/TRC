@@ -67,6 +67,7 @@ func RunMainWindow() {
 	iconMerge := filepath.FromSlash("assets/guiImage/Those_Icons-merge-32.png")
 
 	font := Font{Family: "Microsoft JhengHei", PointSize: 12}
+	titleFont := Font{Family: "Microsoft JhengHei", PointSize: 18}
 
 	var mw *walk.MainWindow
 
@@ -82,148 +83,227 @@ func RunMainWindow() {
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Size:       Size{1000, 200},
 		MinSize:    Size{1000, 200},
-		Layout:     HBox{},
+		Layout:     VBox{},
 		Children: []Widget{
+			VSpacer{
+				MaxSize: Size{1, 20},
+			},
 			Composite{
-				Layout: VBox{},
+				Layout: Grid{Columns: 4},
 				Children: []Widget{
-					//download
-					PushButton{
-						Text:    "Download Teacher",
-						Image:   iconDownload,
-						Font:    font,
-						MinSize: Size{200, 50},
-						OnClicked: func() {
-							if cmd, err := RunDownloadTeacherDialog(mw, iconDownload); err != nil {
-								log.Print(err)
-							} else if cmd == walk.DlgCmdOK {
+					Label{
+						Text: "TRC教學資源中心",
+						Font: titleFont,
+					},
+				},
+			},
+			VSpacer{
+				MaxSize: Size{1, 20},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					Composite{
+						Layout: VBox{},
+						Children: []Widget{
+							//download
+							PushButton{
+								Text:    "Download Teacher",
+								Image:   iconDownload,
+								Font:    font,
+								MinSize: Size{200, 50},
+								OnClicked: func() {
+									if cmd, err := RunDownloadTeacherDialog(mw, iconDownload); err != nil {
+										log.Print(err)
+									} else if cmd == walk.DlgCmdOK {
+										checkOutputDir()
 
-							}
+									}
+								},
+							},
+
+							//download
+							PushButton{
+								Text:    "Download Video   ",
+								Image:   iconDownload,
+								Font:    font,
+								MinSize: Size{200, 50},
+								OnClicked: func() {
+									fi := new(DownloadVideoInfo)
+									if cmd, err := RunDownloadVideoDialog(mw, fi, iconDownload); err != nil {
+										log.Print(err)
+									} else if cmd == walk.DlgCmdOK {
+										checkOutputDir()
+
+									}
+								},
+							},
 						},
 					},
+					Composite{
+						Layout: VBox{},
+						Children: []Widget{
+							//split
+							PushButton{
+								Text:    "Split ScoreAlert",
+								Image:   iconSplit,
+								Font:    font,
+								MinSize: Size{200, 50},
+								OnClicked: func() {
+									fi := new(SplitScoreAlertFileInfo)
+									if cmd, err := RunSplitScoreAlertDialog(mw, fi, iconSplit); err != nil {
+										log.Print(err)
+									} else if cmd == walk.DlgCmdOK {
+										checkOutputDir()
+										var masterFile file
+										var templateFile file
+										var teacherFile file
+										var outputFile file
 
-					//download
-					PushButton{
-						Text:    "Download Video   ",
-						Image:   iconDownload,
-						Font:    font,
-						MinSize: Size{200, 50},
-						OnClicked: func() {
-							fi := new(DownloadVideoInfo)
-							if cmd, err := RunDownloadVideoDialog(mw, fi, iconDownload); err != nil {
-								log.Print(err)
-							} else if cmd == walk.DlgCmdOK {
+										masterPathXi := r.FindStringSubmatch(fi.MasterPath)
+										teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
+										templatePathXi := r.FindStringSubmatch(fi.TemplatePath)
 
-							}
+										outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "", "")
+										masterFile.setFile(masterPathXi[1], masterPathXi[2], fi.MasterSheet)
+										templateFile.setFile(templatePathXi[1], templatePathXi[2], fi.TemplateSheet)
+										teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
+
+										errChan := make(chan error, 2)
+										exitChan := make(chan string, 2)
+										defer close(errChan)
+										defer close(exitChan)
+
+										go SplitScoreAlertData(errChan, exitChan, masterFile, templateFile, teacherFile, outputFile)
+
+									Loop:
+										for {
+											select {
+											case err := <-errChan:
+												Error.Printf("%+v\n", err)
+											case <-exitChan:
+												break Loop
+											}
+										}
+									}
+								},
+							},
+						},
+					},
+					Composite{
+						Layout: VBox{},
+						Children: []Widget{
+							//calculate
+							PushButton{
+								Text:    "Calculate Difference",
+								Image:   iconCalculate,
+								Font:    font,
+								MinSize: Size{200, 50},
+								OnClicked: func() {
+									fi := new(CalculateDifferenceInfo)
+									if cmd, err := RunCalculateDifferenceDialog(mw, fi, iconCalculate); err != nil {
+										log.Print(err)
+									} else if cmd == walk.DlgCmdOK {
+										checkOutputDir()
+									}
+								},
+							},
+						},
+					},
+					Composite{
+						Layout: VBox{},
+						Children: []Widget{
+							//merge
+							PushButton{
+								Text:    "Merge Course",
+								Image:   iconMerge,
+								Font:    font,
+								MinSize: Size{200, 50},
+								OnClicked: func() {
+									fi := new(NormalFileInfo)
+									if cmd, err := RunMergeCourseDialog(mw, fi, iconMerge); err != nil {
+										log.Print(err)
+									} else if cmd == walk.DlgCmdOK {
+										checkOutputDir()
+
+										var inputFile file
+										var outputFile file
+
+										inputPathXi := r.FindStringSubmatch(fi.InputPath)
+										inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
+										outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "[MERGENCE]開課總表.xlsx", "工作表")
+
+										errChan := make(chan error, 2)
+										exitChan := make(chan string, 2)
+										defer close(errChan)
+										defer close(exitChan)
+
+										go MergeRapidPrintData(errChan, exitChan, inputFile, outputFile)
+
+									Loop:
+										for {
+											select {
+											case err := <-errChan:
+												Error.Printf("%+v\n", err)
+											case <-exitChan:
+												break Loop
+											}
+										}
+									}
+								},
+							},
+
+							//merge
+							PushButton{
+								Text:    "Merge Video  ",
+								Image:   iconMerge,
+								Font:    font,
+								MinSize: Size{200, 50},
+								OnClicked: func() {
+									fi := new(MergeVideoFileInfo)
+									if cmd, err := RunMergeVideoDialog(mw, fi, iconMerge); err != nil {
+										log.Print(err)
+									} else if cmd == walk.DlgCmdOK {
+										checkOutputDir()
+										var inputFile file
+										var outputFile file
+										inputPathXi := r.FindStringSubmatch(fi.InputPath)
+										inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
+										outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "[MERGENCE]數位課綱.xlsx", "工作表")
+
+										errChan := make(chan error, 2)
+										exitChan := make(chan string, 2)
+										defer close(errChan)
+										defer close(exitChan)
+
+										if fi.TFile {
+											var teacherFile file
+											teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
+											teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
+
+											go MergeSyllabusVideoDataByList(errChan, exitChan, inputFile, outputFile, teacherFile)
+
+										} else {
+											go MergeSyllabusVideoData(errChan, exitChan, inputFile, outputFile)
+										}
+
+									Loop:
+										for {
+											select {
+											case err := <-errChan:
+												Error.Printf("%+v\n", err)
+											case <-exitChan:
+												break Loop
+											}
+										}
+									}
+								},
+							},
 						},
 					},
 				},
 			},
-			Composite{
-				Layout: VBox{},
-				Children: []Widget{
-					//split
-					PushButton{
-						Text:    "Split ScoreAlert",
-						Image:   iconSplit,
-						Font:    font,
-						MinSize: Size{200, 50},
-						OnClicked: func() {
-							fi := new(SplitScoreAlertFileInfo)
-							if cmd, err := RunSplitScoreAlertDialog(mw, fi, iconSplit); err != nil {
-								log.Print(err)
-							} else if cmd == walk.DlgCmdOK {
-								checkOutputDir()
-								var masterFile file
-								var templateFile file
-								var teacherFile file
-								var outputFile file
-								masterPathXi := r.FindStringSubmatch(fi.MasterPath)
-								teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
-								templatePathXi := r.FindStringSubmatch(fi.TemplatePath)
-								outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "", "")
-								masterFile.setFile(masterPathXi[1], masterPathXi[2], fi.MasterSheet)
-								templateFile.setFile(templatePathXi[1], templatePathXi[2], fi.TemplateSheet)
-								teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
-								go SplitScoreAlertData(masterFile, templateFile, teacherFile, outputFile)
-							}
-						},
-					},
-				},
-			},
-			Composite{
-				Layout: VBox{},
-				Children: []Widget{
-					//calculate
-					PushButton{
-						Text:    "Calculate Difference",
-						Image:   iconCalculate,
-						Font:    font,
-						MinSize: Size{200, 50},
-						OnClicked: func() {
-							fi := new(CalculateDifferenceInfo)
-							if cmd, err := RunCalculateDifferenceDialog(mw, fi, iconCalculate); err != nil {
-								log.Print(err)
-							} else if cmd == walk.DlgCmdOK {
-
-							}
-						},
-					},
-				},
-			},
-			Composite{
-				Layout: VBox{},
-				Children: []Widget{
-					//merge
-					PushButton{
-						Text:    "Merge Course",
-						Image:   iconMerge,
-						Font:    font,
-						MinSize: Size{200, 50},
-						OnClicked: func() {
-							fi := new(NormalFileInfo)
-							if cmd, err := RunMergeCourseDialog(mw, fi, iconMerge); err != nil {
-								log.Print(err)
-							} else if cmd == walk.DlgCmdOK {
-
-							}
-						},
-					},
-
-					//merge
-					PushButton{
-						Text:    "Merge Video  ",
-						Image:   iconMerge,
-						Font:    font,
-						MinSize: Size{200, 50},
-						OnClicked: func() {
-							fi := new(MergeVideoFileInfo)
-							if cmd, err := RunMergeVideoDialog(mw, fi, iconMerge); err != nil {
-								log.Print(err)
-							} else if cmd == walk.DlgCmdOK {
-								checkOutputDir()
-								var inputFile file
-								var outputFile file
-								inputPathXi := r.FindStringSubmatch(fi.InputPath)
-								inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
-								outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "[MERGENCE]數位課綱.xlsx", "工作表")
-								fmt.Println(outputFile.filePath)
-
-								if fi.TFile {
-									var teacherFile file
-									teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
-									teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
-
-									go MergeSyllabusVideoDataByList(inputFile, outputFile, teacherFile)
-
-								} else {
-									go MergeSyllabusVideoData(inputFile, outputFile)
-								}
-							}
-						},
-					},
-				},
-			},
+			HSpacer{},
 		},
 	}.Run()); err != nil {
 		log.Fatal(err)

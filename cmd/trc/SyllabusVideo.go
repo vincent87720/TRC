@@ -9,39 +9,100 @@ import (
 	"github.com/pkg/errors"
 )
 
-//MergeSyllabusVideoData 合併數位課綱資料
-func MergeSyllabusVideoData(inputFile file, outputFile file) (err error) {
-	fmt.Println(outputFile.filePath)
+// MergeSyllabusVideoData 合併數位課綱資料
+// Goroutine interface for GUI
+// For example:
+// 	var inputFile file
+// 	var outputFile file
+//
+// 	inputFile.setFile("Your file path", "Your file name", "Your sheet name")
+// 	outputFile.setFile("Your file path", "Your file name", "Your sheet name")
+//
+// 	errChan := make(chan error, 2)
+// 	exitChan := make(chan string, 2)
+// 	defer close(errChan)
+// 	defer close(exitChan)
+//
+// 	go MergeSyllabusVideoData(errChan, exitChan, inputFile, outputFile)
+//
+// Loop:
+// 	for {
+// 		select {
+// 		case err := <-errChan:
+// 			Error.Printf("%+v\n", err)
+// 		case <-exitChan:
+// 			break Loop
+// 		}
+// 	}
+func MergeSyllabusVideoData(errChan chan error, exitChan chan string, inputFile file, outputFile file) {
 
 	svf := svFile{
 		file: inputFile,
 	}
 
-	err = svf.readRawData()
+	err := svf.readRawData()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = svf.groupByTeacher()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = svf.matchTeacherInfo()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = svf.transportToSlice()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = svf.exportDataToExcel(outputFile)
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
-	return nil
+
+	exitChan <- "exit"
+	return
 }
 
-//MergeSyllabusVideoDataByList 使用教師名單合併數位課綱資料
-func MergeSyllabusVideoDataByList(inputFile file, outputFile file, teacherFile file) (err error) {
+// MergeSyllabusVideoDataByList 使用教師名單合併數位課綱資料
+// Goroutine interface for GUI
+// For example:
+// 	var inputFile file
+// 	var outputFile file
+//	var teacherFile file
+//
+// 	inputFile.setFile("Your file path", "Your file name", "Your sheet name")
+// 	outputFile.setFile("Your file path", "Your file name", "Your sheet name")
+//	teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
+//
+// 	errChan := make(chan error, 2)
+// 	exitChan := make(chan string, 2)
+// 	defer close(errChan)
+// 	defer close(exitChan)
+//
+//	go MergeSyllabusVideoDataByList(errChan, exitChan, inputFile, outputFile, teacherFile)
+//
+// Loop:
+// 	for {
+// 		select {
+// 		case err := <-errChan:
+// 			Error.Printf("%+v\n", err)
+// 		case <-exitChan:
+// 			break Loop
+// 		}
+// 	}
+func MergeSyllabusVideoDataByList(errChan chan error, exitChan chan string, inputFile file, outputFile file, teacherFile file) {
 	svf := svFile{
 		file: inputFile,
 	}
@@ -50,35 +111,51 @@ func MergeSyllabusVideoDataByList(inputFile file, outputFile file, teacherFile f
 		file: teacherFile,
 	}
 
-	err = svf.readRawData()
+	err := svf.readRawData()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = svf.groupByTeacher()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = thf.readRawData()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = thf.groupByTeacher()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = svf.matchTeacherInfoFile(thf)
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = svf.transportToSlice()
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
 	err = svf.exportDataToExcel(outputFile)
 	if err != nil {
-		return err
+		errChan <- err
+		exitChan <- "exit"
+		return
 	}
-	return nil
+
+	exitChan <- "exit"
+	return
 }
 
 //groupByTeacher 依照教師名稱將數位課綱資料分群
@@ -181,7 +258,7 @@ func (svf *svFile) transportToSlice() (err error) {
 		//計算若目前老師的科目數量會佔幾列
 		rowNum := len(value) / 9
 		if len(value)%9 != 0 {
-			rowNum += 1
+			rowNum++
 		}
 
 		//將rowNum列加入到svf.mergedXi中

@@ -314,9 +314,7 @@ func setInitialPath() {
 func init() {
 	setInitialPath()
 	exportAssets()
-	if _, err := os.Stat(INITPATH + "/assets/logs"); os.IsNotExist(err) {
-		initLogging()
-	}
+	initLogging()
 }
 
 func main() {
