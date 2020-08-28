@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
@@ -135,7 +133,7 @@ func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, icon
 						Text:     "OK",
 						OnClicked: func() {
 							if err := db.Submit(); err != nil {
-								log.Print(err)
+								Error.Printf("%+v\n", err)
 								return
 							}
 

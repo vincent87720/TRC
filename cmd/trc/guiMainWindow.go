@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/png"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -73,7 +72,7 @@ func RunMainWindow() {
 
 	r, err := regexp.Compile(`(.*\\)([^\\]*.xlsx)`)
 	if err != nil {
-		log.Print(err)
+		Error.Printf("%+v\n", err)
 	}
 
 	if _, err := (MainWindow{
@@ -114,7 +113,7 @@ func RunMainWindow() {
 								MinSize: Size{200, 50},
 								OnClicked: func() {
 									if cmd, err := RunDownloadTeacherDialog(mw, iconDownload); err != nil {
-										log.Print(err)
+										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
 
@@ -131,7 +130,7 @@ func RunMainWindow() {
 								OnClicked: func() {
 									fi := new(DownloadVideoInfo)
 									if cmd, err := RunDownloadVideoDialog(mw, fi, iconDownload); err != nil {
-										log.Print(err)
+										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
 
@@ -152,7 +151,7 @@ func RunMainWindow() {
 								OnClicked: func() {
 									fi := new(SplitScoreAlertFileInfo)
 									if cmd, err := RunSplitScoreAlertDialog(mw, fi, iconSplit); err != nil {
-										log.Print(err)
+										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
 										var masterFile file
@@ -202,7 +201,7 @@ func RunMainWindow() {
 								OnClicked: func() {
 									fi := new(CalculateDifferenceInfo)
 									if cmd, err := RunCalculateDifferenceDialog(mw, fi, iconCalculate); err != nil {
-										log.Print(err)
+										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
 									}
@@ -222,7 +221,7 @@ func RunMainWindow() {
 								OnClicked: func() {
 									fi := new(NormalFileInfo)
 									if cmd, err := RunMergeCourseDialog(mw, fi, iconMerge); err != nil {
-										log.Print(err)
+										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
 
@@ -262,7 +261,7 @@ func RunMainWindow() {
 								OnClicked: func() {
 									fi := new(MergeVideoFileInfo)
 									if cmd, err := RunMergeVideoDialog(mw, fi, iconMerge); err != nil {
-										log.Print(err)
+										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
 										var inputFile file
@@ -306,7 +305,7 @@ func RunMainWindow() {
 			HSpacer{},
 		},
 	}.Run()); err != nil {
-		log.Fatal(err)
+		Error.Fatalf("%+v\n", err)
 	}
 }
 

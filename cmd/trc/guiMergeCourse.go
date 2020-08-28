@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
@@ -73,7 +71,7 @@ func RunMergeCourseDialog(owner walk.Form, fi *NormalFileInfo, iconFilePath stri
 						Text:     "OK",
 						OnClicked: func() {
 							if err := db.Submit(); err != nil {
-								log.Print(err)
+								Error.Printf("%+v\n", err)
 								return
 							}
 							dlg.Accept()

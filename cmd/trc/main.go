@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -306,7 +305,7 @@ func manualMode(trcCmd *commandSet, f *flags) (err error) {
 func setInitialPath() {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		log.Fatal(err)
+		Error.Fatalf("%+v\n", err)
 	}
 	INITPATH = filepath.ToSlash(dir)
 }
@@ -341,40 +340,4 @@ func main() {
 	if err != nil {
 		Error.Printf("%+v\n", err)
 	}
-
-	//合併數位課綱
-	// var inputFile svFile
-	// var outputFile file
-
-	// inputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "108-1期中預警總表.xlsx", "工作表")
-	// outputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "export.xlsx", "工作表")
-	// inputFile.MergeSyllabusVideoData(outputFile)
-
-	// var inputFile rpFile
-	// var outputFile file
-	// inputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "108-2開課資料.xlsx", "工作表")
-	// outputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "export.xlsx", "工作表")
-	// inputFile.MergeRapidPrintData(outputFile)
-
-	// var inputFile dcFile
-	// var outputFile file
-	// inputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "1081108生態組 評量尺規成績輸入表.xlsx", "學系彙整版")
-	// outputFile.setFile("D:\\Project\\Go\\src\\NEWTRC\\", "export.xlsx", "工作表")
-	// inputFile.DifferenceCalculation(outputFile)
-
-	// allFiles, err := ioutil.ReadDir("./")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// for _, f := range allFiles {
-	// 	match, _ := regexp.MatchString(`\.xlsx`, f.Name())
-	// 	if match {
-	// 		var inputFile dcFile
-	// 		var outputFile file
-	// 		inputFile.setFile("./", f.Name(), "學系彙整版")
-	// 		outputFile.setFile("./", "difference-"+f.Name(), "工作表")
-	// 		inputFile.DifferenceCalculation(outputFile)
-	// 	}
-	// }
 }
