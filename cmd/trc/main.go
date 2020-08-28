@@ -6,9 +6,11 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
@@ -340,4 +342,22 @@ func main() {
 	if err != nil {
 		Error.Printf("%+v\n", err)
 	}
+}
+
+func findSpecificExtentionFiles(path string, extention string) (files []string, err error) {
+	fileXi := make([]string, 0)
+
+	allFiles, err := ioutil.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fi := range allFiles {
+		match, _ := regexp.MatchString(extention+"$", fi.Name())
+		if match {
+			fileXi = append(fileXi, fi.Name())
+		}
+	}
+
+	return fileXi, nil
 }

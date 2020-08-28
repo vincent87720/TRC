@@ -8,7 +8,60 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (dcf *dcFile) DifferenceCalculate(outputFile file) (err error) {
+func DifferenceCalculate(errChan chan error, exitChan chan string, inputFile file, outputFile file) {
+
+	dcf := dcFile{
+		file: inputFile,
+	}
+
+	err := dcf.readRawData()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dcf.setJudge()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dcf.fillSliceLength(len(dcf.firstRow))
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dcf.groupByStudent()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dcf.calculateDifference()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dcf.transportToSlice()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dcf.exportDataToExcel(outputFile)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+
+	exitChan <- "exit"
+	return
+}
+
+func (dcf *dcFile) differenceCalculate(outputFile file) (err error) {
 	err = dcf.readRawData()
 	if err != nil {
 		return err

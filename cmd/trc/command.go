@@ -825,7 +825,7 @@ func calcDifferenceAllFile(f *flags) (err error) {
 		var outputFile file
 		inputFile.setFile(f.inputFilePath, xlsxName, f.inputSheetName)
 		outputFile.setFile(f.outputFilePath, "[DIFFERENCE]"+xlsxName, f.outputSheetName)
-		err = inputFile.DifferenceCalculate(outputFile)
+		err = inputFile.differenceCalculate(outputFile)
 		if err != nil {
 			fmt.Println("\r>[" + strconv.Itoa(loopCount) + "][Fail]\t\t" + xlsxName)
 			Error.Printf("%+v\n", err)

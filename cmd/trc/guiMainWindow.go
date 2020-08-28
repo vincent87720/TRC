@@ -54,6 +54,7 @@ type MergeVideoFileInfo struct {
 type CalculateDifferenceInfo struct {
 	InputPath  string
 	InputSheet string
+	Folder     string
 	CalcAll    bool
 }
 
@@ -163,7 +164,7 @@ func RunMainWindow() {
 										teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
 										templatePathXi := r.FindStringSubmatch(fi.TemplatePath)
 
-										outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "", "")
+										outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), "", "")
 										masterFile.setFile(masterPathXi[1], masterPathXi[2], fi.MasterSheet)
 										templateFile.setFile(templatePathXi[1], templatePathXi[2], fi.TemplateSheet)
 										teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
@@ -204,6 +205,48 @@ func RunMainWindow() {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
+										if fi.CalcAll {
+
+											files, err := findSpecificExtentionFiles(fi.Folder, ".xlsx")
+
+											if err != nil {
+												Error.Printf("%+v\n", err)
+											}
+
+											//紀錄設定goroutine數量
+											countGo := len(files)
+
+											errChan := make(chan error, 2)
+											exitChan := make(chan string, 2)
+											defer close(errChan)
+											defer close(exitChan)
+
+											for _, value := range files {
+
+												var inputFile file
+												var outputFile file
+
+												inputFile.setFile(filepath.ToSlash(fi.Folder+"/"), value, "學系彙整版")
+												outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), "[DIFFERENCE]"+value, "工作表")
+
+												go DifferenceCalculate(errChan, exitChan, inputFile, outputFile)
+											}
+										Loop:
+											for {
+												select {
+												case err := <-errChan:
+													Error.Printf("%+v\n", err)
+												case <-exitChan:
+													//每當一個goroutine因錯誤或完成而返回exit時，countGo減一
+													countGo--
+													if countGo == 0 {
+														break Loop
+													}
+												}
+											}
+										} else {
+
+										}
 									}
 								},
 							},
@@ -407,4 +450,19 @@ func OnOpenFileButtonClicked(owner walk.Form, filePath *walk.LineEdit, selector 
 		keys = append(keys, &DropDownItem{Key: idx, Name: val})
 	}
 	selector.SetModel(keys)
+}
+
+func OnBrowseFolderButtonClicked(owner walk.Form, filePath *walk.LineEdit) {
+	dlg := new(walk.FileDialog)
+	dlg.Title = "Browse Folder"
+
+	if ok, err := dlg.ShowBrowseFolder(owner); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:Open folder")
+		return
+	} else if !ok {
+		fmt.Fprintln(os.Stderr, "Cancel folder browsing")
+		return
+	}
+
+	filePath.SetText(dlg.FilePath)
 }
