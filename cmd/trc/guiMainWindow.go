@@ -205,6 +205,7 @@ func RunMainWindow() {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
+										//Calculate all files in fi.Folder
 										if fi.CalcAll {
 
 											files, err := findSpecificExtentionFiles(fi.Folder, ".xlsx")
@@ -231,7 +232,7 @@ func RunMainWindow() {
 
 												go DifferenceCalculate(errChan, exitChan, inputFile, outputFile)
 											}
-										Loop:
+										LoopCalcAll:
 											for {
 												select {
 												case err := <-errChan:
@@ -240,12 +241,34 @@ func RunMainWindow() {
 													//每當一個goroutine因錯誤或完成而返回exit時，countGo減一
 													countGo--
 													if countGo == 0 {
-														break Loop
+														break LoopCalcAll
 													}
 												}
 											}
 										} else {
+											var inputFile file
+											var outputFile file
 
+											inputPathXi := r.FindStringSubmatch(fi.InputPath)
+											inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
+											outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "[DIFFERENCE]"+inputPathXi[2], "工作表")
+
+											errChan := make(chan error, 2)
+											exitChan := make(chan string, 2)
+											defer close(errChan)
+											defer close(exitChan)
+
+											go DifferenceCalculate(errChan, exitChan, inputFile, outputFile)
+
+										Loop:
+											for {
+												select {
+												case err := <-errChan:
+													Error.Printf("%+v\n", err)
+												case <-exitChan:
+													break Loop
+												}
+											}
 										}
 									}
 								},
