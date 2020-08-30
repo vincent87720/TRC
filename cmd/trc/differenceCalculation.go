@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func DifferenceCalculate(errChan chan error, exitChan chan string, inputFile file, outputFile file) {
+func DifferenceCalculate(progChan chan int, inputFile file, outputFile file) {
 
 	dcf := dcFile{
 		file: inputFile,
@@ -16,48 +16,47 @@ func DifferenceCalculate(errChan chan error, exitChan chan string, inputFile fil
 
 	err := dcf.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dcf.setJudge()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dcf.fillSliceLength(len(dcf.firstRow))
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dcf.groupByStudent()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dcf.calculateDifference()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dcf.transportToSlice()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dcf.exportDataToExcel(outputFile)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 
-	exitChan <- "exit"
 	return
 }
 
@@ -136,6 +135,7 @@ func (dcf *dcFile) groupByStudent() (err error) {
 			//提取各面向平均欄位
 			f, err := getScore(value, 4, "avg")
 			if err != nil {
+				err = errors.WithStack(err)
 				return err
 			}
 			dcf.gbsd[s] = append(dcf.gbsd[s], f)
@@ -144,6 +144,7 @@ func (dcf *dcFile) groupByStudent() (err error) {
 		//提取單一面向不同評審的成績
 		f, err := getScore(value, 0, value[2])
 		if err != nil {
+			err = errors.WithStack(err)
 			return err
 		}
 		dcf.gbsd[s] = append(dcf.gbsd[s], f)

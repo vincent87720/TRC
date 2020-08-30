@@ -38,7 +38,7 @@ import (
 // 			break Loop
 // 		}
 // 	}
-func SplitScoreAlertData(errChan chan error, exitChan chan string, inputFile file, templateFile file, teacherFile file, outputFile file) {
+func SplitScoreAlertData(progChan chan int, inputFile file, templateFile file, teacherFile file, outputFile file) {
 	saf := saFile{
 		file: inputFile,
 	}
@@ -48,42 +48,41 @@ func SplitScoreAlertData(errChan chan error, exitChan chan string, inputFile fil
 
 	err := saf.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = saf.groupByTeacher()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = thf.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = thf.groupByTeacher()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = templateFile.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = saf.exportDataToExcel(templateFile, thf, outputFile)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 
-	exitChan <- "exit"
 	return
 }
 

@@ -69,7 +69,7 @@ type unitJSON struct {
 // 			break Loop
 // 		}
 // 	}
-func GetTeacher(errChan chan error, exitChan chan string, outputFile file) {
+func GetTeacher(progChan chan int, outputFile file) {
 	var tdreq getTDRequest
 	var udreq getUDRequest
 	var cudreq getCUDRequest
@@ -78,56 +78,55 @@ func GetTeacher(errChan chan error, exitChan chan string, outputFile file) {
 	udreq.setURL("https://lg.dyu.edu.tw/get_unit_title.php")
 	err := udreq.sendPostRequest()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = udreq.parseData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	cudreq.setURL("http://lg.dyu.edu.tw/search_unit.php")
 	err = cudreq.sendPostRequest()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = cudreq.parseData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	tdreq.setURL("https://lg.dyu.edu.tw/search_teacher.php")
 	err = tdreq.sendPostRequest()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = tdreq.parseData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = inputFile.transportToSlice(&tdreq, &udreq, &cudreq)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = inputFile.exportDataToExcel(outputFile)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 
-	exitChan <- "exit"
 	return
 }
 

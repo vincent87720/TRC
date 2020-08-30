@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"time"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/lxn/walk"
@@ -77,6 +78,7 @@ func runMainWindow() {
 	titleFont := Font{Family: "Microsoft JhengHei", PointSize: 18}
 
 	var mw *walk.MainWindow
+	var pb *walk.ProgressBar
 
 	r, err := regexp.Compile(`(.*\\)([^\\]*.xlsx)`)
 	if err != nil {
@@ -123,25 +125,14 @@ func runMainWindow() {
 								OnClicked: func() {
 									checkOutputDir()
 
-									errChan := make(chan error, 2)
-									exitChan := make(chan string, 2)
-									defer close(errChan)
-									defer close(exitChan)
+									progChan := make(chan int, 2)
 
 									var outputFile file
 
 									outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), "教師名單.xlsx", "工作表")
 
-									go GetTeacher(errChan, exitChan, outputFile)
-								Loop:
-									for {
-										select {
-										case err := <-errChan:
-											Error.Printf("%+v\n", err)
-										case <-exitChan:
-											break Loop
-										}
-									}
+									go setProgressBar(progChan, mw, pb, 0, 8)
+									go GetTeacher(progChan, outputFile)
 								},
 							},
 
@@ -157,10 +148,8 @@ func runMainWindow() {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
-										errChan := make(chan error, 2)
-										exitChan := make(chan string, 2)
-										defer close(errChan)
-										defer close(exitChan)
+
+										progChan := make(chan int, 2)
 
 										var outputFile file
 
@@ -172,19 +161,12 @@ func runMainWindow() {
 
 											inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
 
-											go AppendSyllabusVideo(errChan, exitChan, fi.Year, fi.Semester, fi.Key, inputFile, outputFile)
-										} else {
-											go GetSyllabusVideo(errChan, exitChan, fi.Year, fi.Semester, fi.Key, outputFile)
-										}
+											go setProgressBar(progChan, mw, pb, 0, 10)
+											go AppendSyllabusVideo(progChan, fi.Year, fi.Semester, fi.Key, inputFile, outputFile)
 
-									Loop:
-										for {
-											select {
-											case err := <-errChan:
-												Error.Printf("%+v\n", err)
-											case <-exitChan:
-												break Loop
-											}
+										} else {
+											go setProgressBar(progChan, mw, pb, 0, 7)
+											go GetSyllabusVideo(progChan, fi.Year, fi.Semester, fi.Key, outputFile)
 										}
 									}
 								},
@@ -221,13 +203,8 @@ func runMainWindow() {
 												Error.Printf("%+v\n", err)
 											}
 
-											//紀錄設定goroutine數量
-											countGo := len(files)
-
-											errChan := make(chan error, 2)
-											exitChan := make(chan string, 2)
-											defer close(errChan)
-											defer close(exitChan)
+											progChan := make(chan int, 5)
+											go setProgressBar(progChan, mw, pb, 0, len(files)*7)
 
 											for _, value := range files {
 
@@ -237,21 +214,9 @@ func runMainWindow() {
 												inputFile.setFile(filepath.ToSlash(fi.Folder+"/"), value, "學系彙整版")
 												outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), "[DIFFERENCE]"+value, "工作表")
 
-												go DifferenceCalculate(errChan, exitChan, inputFile, outputFile)
+												go DifferenceCalculate(progChan, inputFile, outputFile)
 											}
-										LoopCalcAll:
-											for {
-												select {
-												case err := <-errChan:
-													Error.Printf("%+v\n", err)
-												case <-exitChan:
-													//每當一個goroutine因錯誤或完成而返回exit時，countGo減一
-													countGo--
-													if countGo == 0 {
-														break LoopCalcAll
-													}
-												}
-											}
+
 										} else {
 											var inputFile file
 											var outputFile file
@@ -260,22 +225,11 @@ func runMainWindow() {
 											inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
 											outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "[DIFFERENCE]"+inputPathXi[2], "工作表")
 
-											errChan := make(chan error, 2)
-											exitChan := make(chan string, 2)
-											defer close(errChan)
-											defer close(exitChan)
+											progChan := make(chan int, 2)
 
-											go DifferenceCalculate(errChan, exitChan, inputFile, outputFile)
+											go setProgressBar(progChan, mw, pb, 0, 7)
+											go DifferenceCalculate(progChan, inputFile, outputFile)
 
-										Loop:
-											for {
-												select {
-												case err := <-errChan:
-													Error.Printf("%+v\n", err)
-												case <-exitChan:
-													break Loop
-												}
-											}
 										}
 									}
 								},
@@ -317,22 +271,10 @@ func runMainWindow() {
 										templateFile.setFile(templatePathXi[1], templatePathXi[2], fi.TemplateSheet)
 										teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
 
-										errChan := make(chan error, 2)
-										exitChan := make(chan string, 2)
-										defer close(errChan)
-										defer close(exitChan)
+										progChan := make(chan int, 2)
 
-										go SplitScoreAlertData(errChan, exitChan, masterFile, templateFile, teacherFile, outputFile)
-
-									Loop:
-										for {
-											select {
-											case err := <-errChan:
-												Error.Printf("%+v\n", err)
-											case <-exitChan:
-												break Loop
-											}
-										}
+										go setProgressBar(progChan, mw, pb, 0, 6)
+										go SplitScoreAlertData(progChan, masterFile, templateFile, teacherFile, outputFile)
 									}
 								},
 							},
@@ -367,22 +309,10 @@ func runMainWindow() {
 										inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
 										outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "[MERGENCE]開課總表.xlsx", "工作表")
 
-										errChan := make(chan error, 2)
-										exitChan := make(chan string, 2)
-										defer close(errChan)
-										defer close(exitChan)
+										progChan := make(chan int, 2)
 
-										go MergeRapidPrintData(errChan, exitChan, inputFile, outputFile)
-
-									Loop:
-										for {
-											select {
-											case err := <-errChan:
-												Error.Printf("%+v\n", err)
-											case <-exitChan:
-												break Loop
-											}
-										}
+										go setProgressBar(progChan, mw, pb, 0, 7)
+										go MergeRapidPrintData(progChan, inputFile, outputFile)
 									}
 								},
 							},
@@ -405,30 +335,18 @@ func runMainWindow() {
 										inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
 										outputFile.setFile(filepath.FromSlash(INITPATH+"/output/"), "[MERGENCE]數位課綱.xlsx", "工作表")
 
-										errChan := make(chan error, 2)
-										exitChan := make(chan string, 2)
-										defer close(errChan)
-										defer close(exitChan)
+										progChan := make(chan int, 2)
 
 										if fi.TFile {
 											var teacherFile file
 											teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
 											teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
 
-											go MergeSyllabusVideoDataByList(errChan, exitChan, inputFile, outputFile, teacherFile)
-
+											go setProgressBar(progChan, mw, pb, 0, 7)
+											go MergeSyllabusVideoDataByList(progChan, inputFile, outputFile, teacherFile)
 										} else {
-											go MergeSyllabusVideoData(errChan, exitChan, inputFile, outputFile)
-										}
-
-									Loop:
-										for {
-											select {
-											case err := <-errChan:
-												Error.Printf("%+v\n", err)
-											case <-exitChan:
-												break Loop
-											}
+											go setProgressBar(progChan, mw, pb, 0, 5)
+											go MergeSyllabusVideoData(progChan, inputFile, outputFile)
 										}
 									}
 								},
@@ -439,6 +357,12 @@ func runMainWindow() {
 				},
 			},
 			HSpacer{},
+			ProgressBar{
+				AssignTo: &pb,
+				MaxValue: 100,
+				MinValue: 0,
+				Visible:  false,
+			},
 		},
 	}.Run()); err != nil {
 		Error.Fatalf("%+v\n", err)
@@ -558,4 +482,31 @@ func onBrowseFolderButtonClicked(owner walk.Form, filePath *walk.LineEdit) {
 	}
 
 	filePath.SetText(dlg.FilePath)
+}
+
+func setProgressBar(progChan chan int, mw *walk.MainWindow, pb *walk.ProgressBar, min int, max int) {
+	currentVal := 0
+	mw.Synchronize(func() {
+		pb.SetVisible(true)
+		pb.SetRange(min, max)
+	})
+Loop:
+	for {
+		select {
+		case val := <-progChan:
+			currentVal += val
+			mw.Synchronize(func() {
+				pb.SetValue(currentVal)
+			})
+			if currentVal >= max {
+				time.Sleep(time.Duration(1) * time.Second)
+				mw.Synchronize(func() {
+					pb.SetVisible(false)
+					pb.SetValue(0)
+				})
+				close(progChan)
+				break Loop
+			}
+		}
+	}
 }

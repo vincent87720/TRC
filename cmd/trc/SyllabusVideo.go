@@ -34,7 +34,7 @@ import (
 // 			break Loop
 // 		}
 // 	}
-func MergeSyllabusVideoData(errChan chan error, exitChan chan string, inputFile file, outputFile file) {
+func MergeSyllabusVideoData(progChan chan int, inputFile file, outputFile file) {
 
 	svf := svFile{
 		file: inputFile,
@@ -42,36 +42,35 @@ func MergeSyllabusVideoData(errChan chan error, exitChan chan string, inputFile 
 
 	err := svf.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svf.groupByTeacher()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 2
 	err = svf.matchTeacherInfo()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 3
 	err = svf.transportToSlice()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 4
 	err = svf.exportDataToExcel(outputFile)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 5
 
-	exitChan <- "exit"
 	return
 }
 
@@ -102,7 +101,7 @@ func MergeSyllabusVideoData(errChan chan error, exitChan chan string, inputFile 
 // 			break Loop
 // 		}
 // 	}
-func MergeSyllabusVideoDataByList(errChan chan error, exitChan chan string, inputFile file, outputFile file, teacherFile file) {
+func MergeSyllabusVideoDataByList(progChan chan int, inputFile file, outputFile file, teacherFile file) {
 	svf := svFile{
 		file: inputFile,
 	}
@@ -113,48 +112,47 @@ func MergeSyllabusVideoDataByList(errChan chan error, exitChan chan string, inpu
 
 	err := svf.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svf.groupByTeacher()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = thf.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = thf.groupByTeacher()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svf.matchTeacherInfoFile(thf)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svf.transportToSlice()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svf.exportDataToExcel(outputFile)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 
-	exitChan <- "exit"
 	return
 }
 

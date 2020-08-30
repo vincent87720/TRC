@@ -43,7 +43,7 @@ func (rp rapidPrintXi) Sort()              { sort.Sort(rp) }
 // 			break Loop
 // 		}
 // 	}
-func MergeRapidPrintData(errChan chan error, exitChan chan string, inputFile file, outputFile file) {
+func MergeRapidPrintData(progChan chan int, inputFile file, outputFile file) {
 
 	rpf := rpFile{
 		file: inputFile,
@@ -51,48 +51,47 @@ func MergeRapidPrintData(errChan chan error, exitChan chan string, inputFile fil
 
 	err := rpf.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
-	err = rpf.fillSliceLength(15)
+	progChan <- 1
+	err = rpf.fillSliceLength(len(rpf.firstRow))
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = rpf.findColumn()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = rpf.groupByTeacher()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = rpf.mergeData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = rpf.transportToSlice()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = rpf.exportDataToExcel(outputFile)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 
-	exitChan <- "exit"
 	return
 }
 

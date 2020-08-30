@@ -33,7 +33,7 @@ import (
 // 			break Loop
 // 		}
 // 	}
-func GetSyllabusVideo(errChan chan error, exitChan chan string, academicYear string, semester string, youtubeAPIKey string, outputFile file) {
+func GetSyllabusVideo(progChan chan int, academicYear string, semester string, youtubeAPIKey string, outputFile file) {
 
 	var dsvf downloadSVFile
 	var svlreq getSVLRequest
@@ -43,50 +43,49 @@ func GetSyllabusVideo(errChan chan error, exitChan chan string, academicYear str
 	// err = svlreq.setURLValues(f.academicYear, f.semester, "'1'", "'1'")
 	err := svlreq.setURLValues(academicYear, semester, "'1','2','3','4','5','6','7'", "'1','2','3','4','N','5','6','7','8','9','A','B','C','D','E'")
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svlreq.sendPostRequest()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svlreq.parseHTML()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	svlreq.findNode(svlreq.htmlNode)
 
 	err = svlreq.getVideoID()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svlreq.getVideoInfo(youtubeAPIKey)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dsvf.transportToSlice(&svlreq)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dsvf.exportDataToExcel(outputFile)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 
-	exitChan <- "exit"
 	return
 }
 
@@ -117,7 +116,7 @@ func GetSyllabusVideo(errChan chan error, exitChan chan string, academicYear str
 // 			break Loop
 // 		}
 // 	}
-func AppendSyllabusVideo(errChan chan error, exitChan chan string, academicYear string, semester string, youtubeAPIKey string, inputFile file, outputFile file) {
+func AppendSyllabusVideo(progChan chan int, academicYear string, semester string, youtubeAPIKey string, inputFile file, outputFile file) {
 
 	dsvf := downloadSVFile{
 		file: inputFile,
@@ -125,22 +124,22 @@ func AppendSyllabusVideo(errChan chan error, exitChan chan string, academicYear 
 
 	err := dsvf.readRawData()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dsvf.findCol("科目序號", &dsvf.cidCol)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dsvf.fillSliceLength(len(dsvf.firstRow))
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 
 	var svlreq getSVLRequest
 	svlreq.svXi = make(map[string][]syllabusVideo)
@@ -149,50 +148,49 @@ func AppendSyllabusVideo(errChan chan error, exitChan chan string, academicYear 
 	// err = svlreq.setURLValues(f.academicYear, f.semester, "'1'", "'1'")
 	err = svlreq.setURLValues(academicYear, semester, "'1','2','3','4','5','6','7'", "'1','2','3','4','N','5','6','7','8','9','A','B','C','D','E'")
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svlreq.sendPostRequest()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svlreq.parseHTML()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	svlreq.findNode(svlreq.htmlNode)
 
 	err = svlreq.getVideoID()
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = svlreq.getVideoInfo(youtubeAPIKey)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dsvf.appendVideoInfo(&svlreq)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 	err = dsvf.exportDataToExcel(outputFile)
 	if err != nil {
-		errChan <- err
-		exitChan <- "exit"
+		Error.Printf("%+v\n", err)
 		return
 	}
+	progChan <- 1
 
-	exitChan <- "exit"
 	return
 }
 
