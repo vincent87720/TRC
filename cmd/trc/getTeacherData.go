@@ -47,6 +47,90 @@ type unitJSON struct {
 	Unittitle string
 }
 
+// GetTeacher 下載教師資料
+// Goroutine interface for GUI
+// For example:
+// 	errChan := make(chan error, 2)
+// 	exitChan := make(chan string, 2)
+// 	defer close(errChan)
+// 	defer close(exitChan)
+//
+// 	var outputFile file
+//
+// 	outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), "教師名單.xlsx", "工作表")
+//
+// 	go GetTeacher(errChan, exitChan, outputFile)
+// Loop:
+// 	for {
+// 		select {
+// 		case err := <-errChan:
+// 			Error.Printf("%+v\n", err)
+// 		case <-exitChan:
+// 			break Loop
+// 		}
+// 	}
+func GetTeacher(errChan chan error, exitChan chan string, outputFile file) {
+	var tdreq getTDRequest
+	var udreq getUDRequest
+	var cudreq getCUDRequest
+	var inputFile downloadTeacherFile
+
+	udreq.setURL("https://lg.dyu.edu.tw/get_unit_title.php")
+	err := udreq.sendPostRequest()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = udreq.parseData()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	cudreq.setURL("http://lg.dyu.edu.tw/search_unit.php")
+	err = cudreq.sendPostRequest()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = cudreq.parseData()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	tdreq.setURL("https://lg.dyu.edu.tw/search_teacher.php")
+	err = tdreq.sendPostRequest()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = tdreq.parseData()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = inputFile.transportToSlice(&tdreq, &udreq, &cudreq)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = inputFile.exportDataToExcel(outputFile)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+
+	exitChan <- "exit"
+	return
+}
+
 //parseData 解析取得的教師資訊
 func (tdreq *getTDRequest) parseData() (err error) {
 	tdreq.teacherInfo = make([]teacherJSON, 0)

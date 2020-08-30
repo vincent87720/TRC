@@ -119,11 +119,26 @@ func runMainWindow() {
 								Font:    font,
 								MinSize: Size{Width: 200, Height: 50},
 								OnClicked: func() {
-									if cmd, err := runDownloadTeacherDialog(mw, iconDownload); err != nil {
-										Error.Printf("%+v\n", err)
-									} else if cmd == walk.DlgCmdOK {
-										checkOutputDir()
+									checkOutputDir()
 
+									errChan := make(chan error, 2)
+									exitChan := make(chan string, 2)
+									defer close(errChan)
+									defer close(exitChan)
+
+									var outputFile file
+
+									outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), "教師名單.xlsx", "工作表")
+
+									go GetTeacher(errChan, exitChan, outputFile)
+								Loop:
+									for {
+										select {
+										case err := <-errChan:
+											Error.Printf("%+v\n", err)
+										case <-exitChan:
+											break Loop
+										}
 									}
 								},
 							},
