@@ -7,7 +7,7 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunDownloadTeacherDialog(owner walk.Form, iconFilePath string) (int, error) {
+func runDownloadTeacherDialog(owner walk.Form, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
@@ -29,7 +29,7 @@ func RunDownloadTeacherDialog(owner walk.Form, iconFilePath string) (int, error)
 		Font:          Font{Family: "Microsoft JhengHei", PointSize: 9},
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
-		MinSize:       Size{300, 300},
+		MinSize:       Size{Width: 300, Height: 300},
 		Layout:        VBox{},
 		Children: []Widget{
 			Composite{
@@ -41,13 +41,13 @@ func RunDownloadTeacherDialog(owner walk.Form, iconFilePath string) (int, error)
 					},
 					LineEdit{
 						AssignTo: &masterFilePath,
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, masterFilePath, masterSheetSelector)
+							onOpenFileButtonClicked(owner, masterFilePath, masterSheetSelector)
 						},
 					},
 					ComboBox{
@@ -63,13 +63,13 @@ func RunDownloadTeacherDialog(owner walk.Form, iconFilePath string) (int, error)
 					},
 					LineEdit{
 						AssignTo: &teacherFilePath,
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, teacherFilePath, teacherSheetSelector)
+							onOpenFileButtonClicked(owner, teacherFilePath, teacherSheetSelector)
 						},
 					},
 					ComboBox{
@@ -85,13 +85,13 @@ func RunDownloadTeacherDialog(owner walk.Form, iconFilePath string) (int, error)
 					},
 					LineEdit{
 						AssignTo: &templateFilePath,
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, templateFilePath, templateSheetSelector)
+							onOpenFileButtonClicked(owner, templateFilePath, templateSheetSelector)
 						},
 					},
 					ComboBox{

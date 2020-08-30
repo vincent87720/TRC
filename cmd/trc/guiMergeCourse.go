@@ -5,7 +5,7 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunMergeCourseDialog(owner walk.Form, fi *NormalFileInfo, iconFilePath string) (int, error) {
+func runMergeCourseDialog(owner walk.Form, fi *NormalFileInfo, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
@@ -31,7 +31,7 @@ func RunMergeCourseDialog(owner walk.Form, fi *NormalFileInfo, iconFilePath stri
 		},
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
-		MinSize:       Size{300, 300},
+		MinSize:       Size{Width: 300, Height: 300},
 		Layout:        VBox{},
 		Children: []Widget{
 			Composite{
@@ -44,13 +44,13 @@ func RunMergeCourseDialog(owner walk.Form, fi *NormalFileInfo, iconFilePath stri
 					LineEdit{
 						AssignTo: &inputFilePath,
 						Text:     Bind("InputPath"),
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, inputFilePath, inputSheetSelector)
+							onOpenFileButtonClicked(owner, inputFilePath, inputSheetSelector)
 						},
 					},
 					ComboBox{

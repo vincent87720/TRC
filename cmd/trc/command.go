@@ -88,7 +88,16 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 			} else {
 				switch os.Args[2] {
 				case "gui":
-					RunMainWindow()
+					err := f.startGuiFlagSet.Parse(os.Args[3:])
+					if err != nil {
+						Error.Printf("%+v\n", err)
+					}
+
+					if f.help == true {
+						f.startGuiFlagSet.Usage()
+						return
+					}
+					runMainWindow()
 				default:
 					cmdSet.layer2CommandUsage(os.Args[1])
 				}

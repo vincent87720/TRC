@@ -1,106 +1,128 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunDownloadVideoDialog(owner walk.Form, fi *DownloadVideoInfo, iconFilePath string) (int, error) {
+func runDownloadVideoDialog(owner walk.Form, fi *DownloadVideoInfo, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
-	var masterFilePath *walk.LineEdit
-	var teacherFilePath *walk.LineEdit
-	var templateFilePath *walk.LineEdit
+	var db *walk.DataBinder
 
-	var masterSheetSelector *walk.ComboBox
-	var teacherSheetSelector *walk.ComboBox
-	var templateSheetSelector *walk.ComboBox
+	var year *walk.LineEdit
+	var semester *walk.LineEdit
+	var youtubeAPIKey *walk.LineEdit
+	var inputFilePath *walk.LineEdit
+	var inputSheetSelector *walk.ComboBox
 
 	labelFont := Font{Family: "Microsoft JhengHei", PointSize: 11}
 
 	return Dialog{
-		AssignTo:      &dlg,
-		Title:         "DownloadSyllabusVideoData",
-		Icon:          iconFilePath,
-		Background:    SolidColorBrush{Color: walk.RGB(255, 255, 255)},
-		Font:          Font{Family: "Microsoft JhengHei", PointSize: 9},
+		AssignTo:   &dlg,
+		Title:      "DownloadSyllabusVideoData",
+		Icon:       iconFilePath,
+		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
+		Font:       Font{Family: "Microsoft JhengHei", PointSize: 9},
+		DataBinder: DataBinder{
+			AssignTo:       &db,
+			Name:           "downloadSyllabusVideo",
+			DataSource:     fi,
+			ErrorPresenter: ToolTipErrorPresenter{},
+		},
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
-		MinSize:       Size{300, 300},
+		MinSize:       Size{Width: 300, Height: 300},
 		Layout:        VBox{},
 		Children: []Widget{
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					RadioButtonGroup{
+						DataMember: "Append",
+						Buttons: []RadioButton{
+							RadioButton{
+								Name:  "new",
+								Text:  "下載並建立新檔案",
+								Value: false,
+							},
+							RadioButton{
+								Name:  "append",
+								Text:  "下載並合併檔案",
+								Value: true,
+							},
+						},
+					},
+					HSpacer{},
+				},
+			},
+			Composite{
+				Layout: Grid{Columns: 2},
+				Children: []Widget{
+					Label{
+						Text: "學年",
+						Font: labelFont,
+					},
+					LineEdit{
+						AssignTo: &year,
+						MinSize:  Size{Width: 250, Height: 0},
+						Text:     Bind("Year"),
+					},
+
+					Label{
+						Text: "學期",
+						Font: labelFont,
+					},
+					LineEdit{
+						AssignTo: &semester,
+						MinSize:  Size{Width: 250, Height: 0},
+						Text:     Bind("Semester"),
+					},
+
+					Label{
+						Text: "YoutubeAPI Key",
+						Font: labelFont,
+					},
+					LineEdit{
+						AssignTo: &youtubeAPIKey,
+						MinSize:  Size{Width: 250, Height: 0},
+						Text:     Bind("Key"),
+					},
+				},
+			},
 			Composite{
 				Layout: Grid{Columns: 4},
 				Children: []Widget{
 					Label{
-						Text: "預警總表",
-						Font: labelFont,
+						Text:    "數位課綱",
+						Font:    labelFont,
+						Visible: Bind("append.Checked"),
 					},
 					LineEdit{
-						AssignTo: &masterFilePath,
-						MinSize:  Size{250, 0},
+						AssignTo: &inputFilePath,
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
+						Text:     Bind("InputPath"),
+						Visible:  Bind("append.Checked"),
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, masterFilePath, masterSheetSelector)
+							onOpenFileButtonClicked(owner, inputFilePath, inputSheetSelector)
 						},
+						Visible: Bind("append.Checked"),
 					},
 					ComboBox{
-						AssignTo:      &masterSheetSelector,
+						AssignTo:      &inputSheetSelector,
 						Editable:      false,
-						BindingMember: "key",
+						BindingMember: "Name",
 						DisplayMember: "Name",
-					},
-
-					Label{
-						Text: "教師名單",
-						Font: labelFont,
-					},
-					LineEdit{
-						AssignTo: &teacherFilePath,
-						MinSize:  Size{250, 0},
-						ReadOnly: true,
-					},
-					PushButton{
-						Text: "選擇檔案",
-						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, teacherFilePath, teacherSheetSelector)
-						},
-					},
-					ComboBox{
-						AssignTo:      &teacherSheetSelector,
-						Editable:      false,
-						BindingMember: "key",
-						DisplayMember: "Name",
-					},
-
-					Label{
-						Text: "空白分表",
-						Font: labelFont,
-					},
-					LineEdit{
-						AssignTo: &templateFilePath,
-						MinSize:  Size{250, 0},
-						ReadOnly: true,
-					},
-					PushButton{
-						Text: "選擇檔案",
-						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, templateFilePath, templateSheetSelector)
-						},
-					},
-					ComboBox{
-						AssignTo:      &templateSheetSelector,
-						Editable:      false,
-						BindingMember: "key",
-						DisplayMember: "Name",
+						Value:         Bind("InputSheet"),
+						Visible:       Bind("append.Checked"),
 					},
 				},
+				Visible: Bind("append.Checked"),
 			},
 			Composite{
 				Layout: HBox{},
@@ -110,13 +132,10 @@ func RunDownloadVideoDialog(owner walk.Form, fi *DownloadVideoInfo, iconFilePath
 						AssignTo: &acceptPB,
 						Text:     "OK",
 						OnClicked: func() {
-							fmt.Println(masterFilePath.Text())
-							fmt.Println(teacherFilePath.Text())
-							fmt.Println(templateFilePath.Text())
-
-							fmt.Println(masterSheetSelector.Text())
-							fmt.Println(teacherSheetSelector.Text())
-							fmt.Println(templateSheetSelector.Text())
+							if err := db.Submit(); err != nil {
+								Error.Printf("%+v\n", err)
+								return
+							}
 
 							dlg.Accept()
 						},

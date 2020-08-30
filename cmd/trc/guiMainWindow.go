@@ -15,16 +15,19 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
+// DropDownItem 下拉式選單結構
 type DropDownItem struct { // Used in the ComboBox dropdown
 	Key  int
 	Name string
 }
 
+// NormalFileInfo structure for DataBinder
 type NormalFileInfo struct {
 	InputPath  string
 	InputSheet string
 }
 
+// DownloadVideoInfo structure for DataBinder
 type DownloadVideoInfo struct {
 	InputPath  string
 	InputSheet string
@@ -34,6 +37,7 @@ type DownloadVideoInfo struct {
 	Append     bool
 }
 
+// SplitScoreAlertFileInfo structure for DataBinder
 type SplitScoreAlertFileInfo struct {
 	MasterPath    string
 	MasterSheet   string
@@ -43,6 +47,7 @@ type SplitScoreAlertFileInfo struct {
 	TemplateSheet string
 }
 
+// MergeVideoFileInfo structure for DataBinder
 type MergeVideoFileInfo struct {
 	InputPath    string
 	InputSheet   string
@@ -51,6 +56,7 @@ type MergeVideoFileInfo struct {
 	TFile        bool
 }
 
+// CalculateDifferenceInfo structure for DataBinder
 type CalculateDifferenceInfo struct {
 	InputPath  string
 	InputSheet string
@@ -58,7 +64,7 @@ type CalculateDifferenceInfo struct {
 	CalcAll    bool
 }
 
-func RunMainWindow() {
+func runMainWindow() {
 
 	iconMain := filepath.FromSlash("assets/guiImage/blockchain-blueblue.png")
 	iconDownload := filepath.FromSlash("assets/guiImage/Those_Icons-download-32.png")
@@ -81,12 +87,12 @@ func RunMainWindow() {
 		Title:      "TRC",
 		Icon:       iconMain,
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
-		Size:       Size{1000, 200},
-		MinSize:    Size{1000, 200},
+		Size:       Size{Width: 1000, Height: 200},
+		MinSize:    Size{Width: 1000, Height: 200},
 		Layout:     VBox{},
 		Children: []Widget{
 			VSpacer{
-				MaxSize: Size{1, 20},
+				MaxSize: Size{Width: 1, Height: 20},
 			},
 			Composite{
 				Layout: Grid{Columns: 4},
@@ -98,7 +104,7 @@ func RunMainWindow() {
 				},
 			},
 			VSpacer{
-				MaxSize: Size{1, 20},
+				MaxSize: Size{Width: 1, Height: 20},
 			},
 			Composite{
 				Layout: HBox{},
@@ -111,9 +117,9 @@ func RunMainWindow() {
 								Text:    "Download Teacher",
 								Image:   iconDownload,
 								Font:    font,
-								MinSize: Size{200, 50},
+								MinSize: Size{Width: 200, Height: 50},
 								OnClicked: func() {
-									if cmd, err := RunDownloadTeacherDialog(mw, iconDownload); err != nil {
+									if cmd, err := runDownloadTeacherDialog(mw, iconDownload); err != nil {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
@@ -127,14 +133,42 @@ func RunMainWindow() {
 								Text:    "Download Video   ",
 								Image:   iconDownload,
 								Font:    font,
-								MinSize: Size{200, 50},
+								MinSize: Size{Width: 200, Height: 50},
 								OnClicked: func() {
 									fi := new(DownloadVideoInfo)
-									if cmd, err := RunDownloadVideoDialog(mw, fi, iconDownload); err != nil {
+									if cmd, err := runDownloadVideoDialog(mw, fi, iconDownload); err != nil {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
+										errChan := make(chan error, 2)
+										exitChan := make(chan string, 2)
+										defer close(errChan)
+										defer close(exitChan)
 
+										var outputFile file
+
+										outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), fi.Year+fi.Semester+"數位課綱.xlsx", "工作表")
+
+										if fi.Append {
+											var inputFile file
+											inputPathXi := r.FindStringSubmatch(fi.InputPath)
+
+											inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
+
+											go AppendSyllabusVideo(errChan, exitChan, fi.Year, fi.Semester, fi.Key, inputFile, outputFile)
+										} else {
+											go GetSyllabusVideo(errChan, exitChan, fi.Year, fi.Semester, fi.Key, outputFile)
+										}
+
+									Loop:
+										for {
+											select {
+											case err := <-errChan:
+												Error.Printf("%+v\n", err)
+											case <-exitChan:
+												break Loop
+											}
+										}
 									}
 								},
 							},
@@ -148,10 +182,10 @@ func RunMainWindow() {
 								Text:    "Split ScoreAlert",
 								Image:   iconSplit,
 								Font:    font,
-								MinSize: Size{200, 50},
+								MinSize: Size{Width: 200, Height: 50},
 								OnClicked: func() {
 									fi := new(SplitScoreAlertFileInfo)
-									if cmd, err := RunSplitScoreAlertDialog(mw, fi, iconSplit); err != nil {
+									if cmd, err := runSplitScoreAlertDialog(mw, fi, iconSplit); err != nil {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
@@ -198,10 +232,10 @@ func RunMainWindow() {
 								Text:    "Calculate Difference",
 								Image:   iconCalculate,
 								Font:    font,
-								MinSize: Size{200, 50},
+								MinSize: Size{Width: 200, Height: 50},
 								OnClicked: func() {
 									fi := new(CalculateDifferenceInfo)
-									if cmd, err := RunCalculateDifferenceDialog(mw, fi, iconCalculate); err != nil {
+									if cmd, err := runCalculateDifferenceDialog(mw, fi, iconCalculate); err != nil {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
@@ -283,10 +317,10 @@ func RunMainWindow() {
 								Text:    "Merge Course",
 								Image:   iconMerge,
 								Font:    font,
-								MinSize: Size{200, 50},
+								MinSize: Size{Width: 200, Height: 50},
 								OnClicked: func() {
 									fi := new(NormalFileInfo)
-									if cmd, err := RunMergeCourseDialog(mw, fi, iconMerge); err != nil {
+									if cmd, err := runMergeCourseDialog(mw, fi, iconMerge); err != nil {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
@@ -323,10 +357,10 @@ func RunMainWindow() {
 								Text:    "Merge Video  ",
 								Image:   iconMerge,
 								Font:    font,
-								MinSize: Size{200, 50},
+								MinSize: Size{Width: 200, Height: 50},
 								OnClicked: func() {
 									fi := new(MergeVideoFileInfo)
-									if cmd, err := RunMergeVideoDialog(mw, fi, iconMerge); err != nil {
+									if cmd, err := runMergeVideoDialog(mw, fi, iconMerge); err != nil {
 										Error.Printf("%+v\n", err)
 									} else if cmd == walk.DlgCmdOK {
 										checkOutputDir()
@@ -447,7 +481,7 @@ func checkOutputDir() {
 	}
 }
 
-func OnOpenFileButtonClicked(owner walk.Form, filePath *walk.LineEdit, selector *walk.ComboBox) {
+func onOpenFileButtonClicked(owner walk.Form, filePath *walk.LineEdit, selector *walk.ComboBox) {
 	dlg := new(walk.FileDialog)
 	dlg.Title = "Open File"
 	dlg.Filter = "Excel檔案 (*.xlsx)|*.xlsx|所有檔案 (*.*)|*.*"
@@ -475,7 +509,7 @@ func OnOpenFileButtonClicked(owner walk.Form, filePath *walk.LineEdit, selector 
 	selector.SetModel(keys)
 }
 
-func OnBrowseFolderButtonClicked(owner walk.Form, filePath *walk.LineEdit) {
+func onBrowseFolderButtonClicked(owner walk.Form, filePath *walk.LineEdit) {
 	dlg := new(walk.FileDialog)
 	dlg.Title = "Browse Folder"
 

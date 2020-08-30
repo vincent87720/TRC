@@ -5,7 +5,7 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, iconFilePath string) (int, error) {
+func runSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
@@ -35,7 +35,7 @@ func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, icon
 		},
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
-		MinSize:       Size{300, 300},
+		MinSize:       Size{Width: 300, Height: 300},
 		Layout:        VBox{},
 		Children: []Widget{
 			Composite{
@@ -48,13 +48,13 @@ func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, icon
 					LineEdit{
 						AssignTo: &masterFilePath,
 						Text:     Bind("MasterPath"),
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, masterFilePath, masterSheetSelector)
+							onOpenFileButtonClicked(owner, masterFilePath, masterSheetSelector)
 						},
 					},
 					ComboBox{
@@ -82,13 +82,13 @@ func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, icon
 					LineEdit{
 						AssignTo: &teacherFilePath,
 						Text:     Bind("TeacherPath"),
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, teacherFilePath, teacherSheetSelector)
+							onOpenFileButtonClicked(owner, teacherFilePath, teacherSheetSelector)
 						},
 					},
 					ComboBox{
@@ -106,13 +106,13 @@ func RunSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, icon
 					LineEdit{
 						AssignTo: &templateFilePath,
 						Text:     Bind("TemplatePath"),
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, templateFilePath, templateSheetSelector)
+							onOpenFileButtonClicked(owner, templateFilePath, templateSheetSelector)
 						},
 					},
 					ComboBox{

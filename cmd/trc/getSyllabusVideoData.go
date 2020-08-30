@@ -4,10 +4,197 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/html"
 )
+
+// GetSyllabusVideo 下載數位課綱資料(建立新檔案)
+// Goroutine interface for GUI
+// For example:
+// 	errChan := make(chan error, 2)
+// 	exitChan := make(chan string, 2)
+// 	defer close(errChan)
+// 	defer close(exitChan)
+//
+// 	var outputFile file
+//
+// 	outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), fi.Year+fi.Semester+"數位課綱.xlsx", "工作表")
+//
+// 	go GetSyllabusVideo(errChan, exitChan, fi.Year, fi.Semester, fi.Key, outputFile)
+//
+// Loop:
+// 	for {
+// 		select {
+// 		case err := <-errChan:
+// 			Error.Printf("%+v\n", err)
+// 		case <-exitChan:
+// 			break Loop
+// 		}
+// 	}
+func GetSyllabusVideo(errChan chan error, exitChan chan string, academicYear string, semester string, youtubeAPIKey string, outputFile file) {
+
+	var dsvf downloadSVFile
+	var svlreq getSVLRequest
+	svlreq.svXi = make(map[string][]syllabusVideo)
+	svlreq.newRequest()
+	svlreq.setURL("http://syl.dyu.edu.tw/sl_cour_time.php?itimestamp=" + strconv.FormatInt(time.Now().Unix(), 10))
+	// err = svlreq.setURLValues(f.academicYear, f.semester, "'1'", "'1'")
+	err := svlreq.setURLValues(academicYear, semester, "'1','2','3','4','5','6','7'", "'1','2','3','4','N','5','6','7','8','9','A','B','C','D','E'")
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = svlreq.sendPostRequest()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = svlreq.parseHTML()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	svlreq.findNode(svlreq.htmlNode)
+
+	err = svlreq.getVideoID()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = svlreq.getVideoInfo(youtubeAPIKey)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dsvf.transportToSlice(&svlreq)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dsvf.exportDataToExcel(outputFile)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+
+	exitChan <- "exit"
+	return
+}
+
+// AppendSyllabusVideo 下載數位課綱資料(合併到舊檔案)
+// Goroutine interface for GUI
+// For example:
+// 	errChan := make(chan error, 2)
+// 	exitChan := make(chan string, 2)
+// 	defer close(errChan)
+// 	defer close(exitChan)
+//
+// 	var inputFile file
+// 	var outputFile file
+//
+// 	inputFile.setFile(inputPathXi[1], inputPathXi[2], fi.InputSheet)
+// 	outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), fi.Year+fi.Semester+"數位課綱.xlsx", "工作表")
+//
+// 	inputPathXi := r.FindStringSubmatch(fi.InputPath)
+//
+// 	go AppendSyllabusVideo(errChan, exitChan, fi.Year, fi.Semester, fi.Key, inputFile, outputFile)
+//
+// Loop:
+// 	for {
+// 		select {
+// 		case err := <-errChan:
+// 			Error.Printf("%+v\n", err)
+// 		case <-exitChan:
+// 			break Loop
+// 		}
+// 	}
+func AppendSyllabusVideo(errChan chan error, exitChan chan string, academicYear string, semester string, youtubeAPIKey string, inputFile file, outputFile file) {
+
+	dsvf := downloadSVFile{
+		file: inputFile,
+	}
+
+	err := dsvf.readRawData()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dsvf.findCol("科目序號", &dsvf.cidCol)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dsvf.fillSliceLength(len(dsvf.firstRow))
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+
+	var svlreq getSVLRequest
+	svlreq.svXi = make(map[string][]syllabusVideo)
+	svlreq.newRequest()
+	svlreq.setURL("http://syl.dyu.edu.tw/sl_cour_time.php?itimestamp=" + strconv.FormatInt(time.Now().Unix(), 10))
+	// err = svlreq.setURLValues(f.academicYear, f.semester, "'1'", "'1'")
+	err = svlreq.setURLValues(academicYear, semester, "'1','2','3','4','5','6','7'", "'1','2','3','4','N','5','6','7','8','9','A','B','C','D','E'")
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = svlreq.sendPostRequest()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = svlreq.parseHTML()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	svlreq.findNode(svlreq.htmlNode)
+
+	err = svlreq.getVideoID()
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = svlreq.getVideoInfo(youtubeAPIKey)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dsvf.appendVideoInfo(&svlreq)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+	err = dsvf.exportDataToExcel(outputFile)
+	if err != nil {
+		errChan <- err
+		exitChan <- "exit"
+		return
+	}
+
+	exitChan <- "exit"
+	return
+}
 
 //setURLValues 設定發送(數位課綱影片連結)請求的參數
 func (svlreq *getSVLRequest) setURLValues(academicYear string, semester string, day string, lesson string) (err error) {
@@ -16,20 +203,20 @@ func (svlreq *getSVLRequest) setURLValues(academicYear string, semester string, 
 		fmt.Printf("無法解析\"%s\"，請輸入合法的年分", academicYear)
 		err = errors.WithStack(fmt.Errorf("Incorrect year value"))
 		return err
-	} else {
-		svlreq.values.Add("smye", strconv.Itoa(yearInt))
-		svlreq.academicYear = academicYear
 	}
+
+	svlreq.values.Add("smye", strconv.Itoa(yearInt))
+	svlreq.academicYear = academicYear
 
 	semesterInt, err := strconv.Atoi(semester)
 	if err != nil || semesterInt < 0 {
 		fmt.Printf("無法解析\"%s\"，請輸入合法的學期", semester)
 		err = errors.WithStack(fmt.Errorf("Incorrect year value"))
 		return err
-	} else {
-		svlreq.values.Add("smty", strconv.Itoa(semesterInt))
-		svlreq.semester = semester
 	}
+
+	svlreq.values.Add("smty", strconv.Itoa(semesterInt))
+	svlreq.semester = semester
 
 	svlreq.values.Add("str_time", day+"sec"+lesson)
 	return nil

@@ -5,7 +5,7 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath string) (int, error) {
+func runMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
@@ -33,7 +33,7 @@ func RunMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath s
 		},
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
-		MinSize:       Size{300, 300},
+		MinSize:       Size{Width: 300, Height: 300},
 		Layout:        VBox{},
 		Children: []Widget{
 			Composite{
@@ -46,13 +46,13 @@ func RunMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath s
 					LineEdit{
 						AssignTo: &inputFilePath,
 						Text:     Bind("InputPath"),
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, inputFilePath, inputSheetSelector)
+							onOpenFileButtonClicked(owner, inputFilePath, inputSheetSelector)
 						},
 					},
 					ComboBox{
@@ -71,14 +71,14 @@ func RunMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath s
 					LineEdit{
 						AssignTo: &teacherFilePath,
 						Text:     Bind("TeacherPath"),
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 						Visible:  Bind("tfile.Checked"),
 					},
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, teacherFilePath, teacherSheetSelector)
+							onOpenFileButtonClicked(owner, teacherFilePath, teacherSheetSelector)
 						},
 						Visible: Bind("tfile.Checked"),
 					},

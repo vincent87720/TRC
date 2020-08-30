@@ -7,7 +7,7 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
-func RunCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, iconFilePath string) (int, error) {
+func runCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, iconFilePath string) (int, error) {
 	var dlg *walk.Dialog
 	var acceptPB, cancelPB *walk.PushButton
 
@@ -35,7 +35,7 @@ func RunCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 		},
 		DefaultButton: &acceptPB,
 		CancelButton:  &cancelPB,
-		MinSize:       Size{300, 300},
+		MinSize:       Size{Width: 300, Height: 300},
 		Layout:        VBox{},
 		Children: []Widget{
 			Composite{
@@ -70,7 +70,7 @@ func RunCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 					},
 					LineEdit{
 						AssignTo: &inputDirPath,
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 						Text:     Bind("Folder"),
 						Visible:  Bind("multiple.Checked"),
@@ -78,7 +78,7 @@ func RunCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 					PushButton{
 						Text: "選擇資料夾",
 						OnClicked: func() {
-							OnBrowseFolderButtonClicked(owner, inputDirPath)
+							onBrowseFolderButtonClicked(owner, inputDirPath)
 						},
 						Visible: Bind("multiple.Checked"),
 					},
@@ -95,7 +95,7 @@ func RunCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 					},
 					LineEdit{
 						AssignTo: &inputFilePath,
-						MinSize:  Size{250, 0},
+						MinSize:  Size{Width: 250, Height: 0},
 						ReadOnly: true,
 						Text:     Bind("InputPath"),
 						Visible:  Bind("single.Checked"),
@@ -103,7 +103,7 @@ func RunCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 					PushButton{
 						Text: "選擇檔案",
 						OnClicked: func() {
-							OnOpenFileButtonClicked(owner, inputFilePath, inputSheetSelector)
+							onOpenFileButtonClicked(owner, inputFilePath, inputSheetSelector)
 						},
 						Visible: Bind("single.Checked"),
 					},
