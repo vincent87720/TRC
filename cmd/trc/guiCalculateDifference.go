@@ -23,7 +23,7 @@ func runCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 
 	return Dialog{
 		AssignTo:   &dlg,
-		Title:      "CalculateDifference",
+		Title:      "計算成績差分",
 		Icon:       iconFilePath,
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Font:       Font{Family: "Microsoft JhengHei", PointSize: 9},
@@ -46,12 +46,12 @@ func runCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 						Buttons: []RadioButton{
 							RadioButton{
 								Name:  "single",
-								Text:  "Single file",
+								Text:  "單一檔案",
 								Value: false,
 							},
 							RadioButton{
 								Name:  "multiple",
-								Text:  "Multiple files",
+								Text:  "多重檔案",
 								Value: true,
 							},
 						},
@@ -124,7 +124,7 @@ func runCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 					HSpacer{},
 					PushButton{
 						AssignTo: &acceptPB,
-						Text:     "OK",
+						Text:     "確定",
 						OnClicked: func() {
 							if err := db.Submit(); err != nil {
 								log.Print(err)
@@ -136,7 +136,7 @@ func runCalculateDifferenceDialog(owner walk.Form, fi *CalculateDifferenceInfo, 
 					},
 					PushButton{
 						AssignTo:  &cancelPB,
-						Text:      "Cancel",
+						Text:      "取消",
 						OnClicked: func() { dlg.Cancel() },
 					},
 				},

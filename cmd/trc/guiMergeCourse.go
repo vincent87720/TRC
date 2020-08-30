@@ -19,7 +19,7 @@ func runMergeCourseDialog(owner walk.Form, fi *NormalFileInfo, iconFilePath stri
 
 	return Dialog{
 		AssignTo:   &dlg,
-		Title:      "MergeCourseData",
+		Title:      "合併製版數登記表",
 		Icon:       iconFilePath,
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Font:       Font{Family: "Microsoft JhengHei", PointSize: 9},
@@ -68,7 +68,7 @@ func runMergeCourseDialog(owner walk.Form, fi *NormalFileInfo, iconFilePath stri
 					HSpacer{},
 					PushButton{
 						AssignTo: &acceptPB,
-						Text:     "OK",
+						Text:     "確定",
 						OnClicked: func() {
 							if err := db.Submit(); err != nil {
 								Error.Printf("%+v\n", err)
@@ -79,7 +79,7 @@ func runMergeCourseDialog(owner walk.Form, fi *NormalFileInfo, iconFilePath stri
 					},
 					PushButton{
 						AssignTo:  &cancelPB,
-						Text:      "Cancel",
+						Text:      "取消",
 						OnClicked: func() { dlg.Cancel() },
 					},
 				},

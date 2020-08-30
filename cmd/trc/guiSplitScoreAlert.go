@@ -23,7 +23,7 @@ func runSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, icon
 
 	return Dialog{
 		AssignTo:   &dlg,
-		Title:      "SplitScoreAlert",
+		Title:      "分割預警總表",
 		Icon:       iconFilePath,
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Font:       Font{Family: "Microsoft JhengHei", PointSize: 9},
@@ -130,7 +130,7 @@ func runSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, icon
 					HSpacer{},
 					PushButton{
 						AssignTo: &acceptPB,
-						Text:     "OK",
+						Text:     "確定",
 						OnClicked: func() {
 							if err := db.Submit(); err != nil {
 								Error.Printf("%+v\n", err)
@@ -142,7 +142,7 @@ func runSplitScoreAlertDialog(owner walk.Form, fi *SplitScoreAlertFileInfo, icon
 					},
 					PushButton{
 						AssignTo:  &cancelPB,
-						Text:      "Cancel",
+						Text:      "取消",
 						OnClicked: func() { dlg.Cancel() },
 					},
 				},

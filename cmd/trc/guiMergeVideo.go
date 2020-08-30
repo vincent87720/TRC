@@ -21,7 +21,7 @@ func runMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath s
 
 	return Dialog{
 		AssignTo:   &dlg,
-		Title:      "MergeSyllabusVideoData",
+		Title:      "合併數位課綱資料",
 		Icon:       iconFilePath,
 		Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)},
 		Font:       Font{Family: "Microsoft JhengHei", PointSize: 9},
@@ -111,7 +111,7 @@ func runMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath s
 					HSpacer{},
 					PushButton{
 						AssignTo: &acceptPB,
-						Text:     "OK",
+						Text:     "確定",
 						OnClicked: func() {
 							if err := db.Submit(); err != nil {
 								Error.Printf("%+v\n", err)
@@ -122,7 +122,7 @@ func runMergeVideoDialog(owner walk.Form, fi *MergeVideoFileInfo, iconFilePath s
 					},
 					PushButton{
 						AssignTo:  &cancelPB,
-						Text:      "Cancel",
+						Text:      "取消",
 						OnClicked: func() { dlg.Cancel() },
 					},
 				},

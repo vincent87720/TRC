@@ -73,6 +73,7 @@ func runMainWindow() {
 	iconMerge := filepath.FromSlash("assets/guiImage/Those_Icons-merge-32.png")
 
 	font := Font{Family: "Microsoft JhengHei", PointSize: 12}
+	subTitleFont := Font{Family: "Microsoft JhengHei", PointSize: 15}
 	titleFont := Font{Family: "Microsoft JhengHei", PointSize: 18}
 
 	var mw *walk.MainWindow
@@ -94,14 +95,10 @@ func runMainWindow() {
 			VSpacer{
 				MaxSize: Size{Width: 1, Height: 20},
 			},
-			Composite{
-				Layout: Grid{Columns: 4},
-				Children: []Widget{
-					Label{
-						Text: "TRC教學資源中心",
-						Font: titleFont,
-					},
-				},
+			Label{
+				Text:          "教學資源中心",
+				Font:          titleFont,
+				TextAlignment: AlignCenter,
 			},
 			VSpacer{
 				MaxSize: Size{Width: 1, Height: 20},
@@ -113,8 +110,13 @@ func runMainWindow() {
 						Layout: VBox{},
 						Children: []Widget{
 							//download
+							Label{
+								Text:          "下載",
+								Font:          subTitleFont,
+								TextAlignment: AlignCenter,
+							},
 							PushButton{
-								Text:    "Download Teacher",
+								Text:    "　教師資料　　",
 								Image:   iconDownload,
 								Font:    font,
 								MinSize: Size{Width: 200, Height: 50},
@@ -145,7 +147,7 @@ func runMainWindow() {
 
 							//download
 							PushButton{
-								Text:    "Download Video   ",
+								Text:    "　數位課綱資料",
 								Image:   iconDownload,
 								Font:    font,
 								MinSize: Size{Width: 200, Height: 50},
@@ -187,64 +189,20 @@ func runMainWindow() {
 									}
 								},
 							},
-						},
-					},
-					Composite{
-						Layout: VBox{},
-						Children: []Widget{
-							//split
-							PushButton{
-								Text:    "Split ScoreAlert",
-								Image:   iconSplit,
-								Font:    font,
-								MinSize: Size{Width: 200, Height: 50},
-								OnClicked: func() {
-									fi := new(SplitScoreAlertFileInfo)
-									if cmd, err := runSplitScoreAlertDialog(mw, fi, iconSplit); err != nil {
-										Error.Printf("%+v\n", err)
-									} else if cmd == walk.DlgCmdOK {
-										checkOutputDir()
-										var masterFile file
-										var templateFile file
-										var teacherFile file
-										var outputFile file
-
-										masterPathXi := r.FindStringSubmatch(fi.MasterPath)
-										teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
-										templatePathXi := r.FindStringSubmatch(fi.TemplatePath)
-
-										outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), "", "")
-										masterFile.setFile(masterPathXi[1], masterPathXi[2], fi.MasterSheet)
-										templateFile.setFile(templatePathXi[1], templatePathXi[2], fi.TemplateSheet)
-										teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
-
-										errChan := make(chan error, 2)
-										exitChan := make(chan string, 2)
-										defer close(errChan)
-										defer close(exitChan)
-
-										go SplitScoreAlertData(errChan, exitChan, masterFile, templateFile, teacherFile, outputFile)
-
-									Loop:
-										for {
-											select {
-											case err := <-errChan:
-												Error.Printf("%+v\n", err)
-											case <-exitChan:
-												break Loop
-											}
-										}
-									}
-								},
-							},
+							VSpacer{},
 						},
 					},
 					Composite{
 						Layout: VBox{},
 						Children: []Widget{
 							//calculate
+							Label{
+								Text:          "計算",
+								Font:          subTitleFont,
+								TextAlignment: AlignCenter,
+							},
 							PushButton{
-								Text:    "Calculate Difference",
+								Text:    "　成績差分",
 								Image:   iconCalculate,
 								Font:    font,
 								MinSize: Size{Width: 200, Height: 50},
@@ -322,14 +280,76 @@ func runMainWindow() {
 									}
 								},
 							},
+							VSpacer{},
+						},
+					},
+					Composite{
+						Layout: VBox{},
+						Children: []Widget{
+							//split
+							Label{
+								Text:          "分割",
+								Font:          subTitleFont,
+								TextAlignment: AlignCenter,
+							},
+							PushButton{
+								Text:    "　預警總表",
+								Image:   iconSplit,
+								Font:    font,
+								MinSize: Size{Width: 200, Height: 50},
+								OnClicked: func() {
+									fi := new(SplitScoreAlertFileInfo)
+									if cmd, err := runSplitScoreAlertDialog(mw, fi, iconSplit); err != nil {
+										Error.Printf("%+v\n", err)
+									} else if cmd == walk.DlgCmdOK {
+										checkOutputDir()
+										var masterFile file
+										var templateFile file
+										var teacherFile file
+										var outputFile file
+
+										masterPathXi := r.FindStringSubmatch(fi.MasterPath)
+										teacherPathXi := r.FindStringSubmatch(fi.TeacherPath)
+										templatePathXi := r.FindStringSubmatch(fi.TemplatePath)
+
+										outputFile.setFile(filepath.ToSlash(INITPATH+"/output/"), "", "")
+										masterFile.setFile(masterPathXi[1], masterPathXi[2], fi.MasterSheet)
+										templateFile.setFile(templatePathXi[1], templatePathXi[2], fi.TemplateSheet)
+										teacherFile.setFile(teacherPathXi[1], teacherPathXi[2], fi.TeacherSheet)
+
+										errChan := make(chan error, 2)
+										exitChan := make(chan string, 2)
+										defer close(errChan)
+										defer close(exitChan)
+
+										go SplitScoreAlertData(errChan, exitChan, masterFile, templateFile, teacherFile, outputFile)
+
+									Loop:
+										for {
+											select {
+											case err := <-errChan:
+												Error.Printf("%+v\n", err)
+											case <-exitChan:
+												break Loop
+											}
+										}
+									}
+								},
+							},
+							VSpacer{},
 						},
 					},
 					Composite{
 						Layout: VBox{},
 						Children: []Widget{
 							//merge
+							Label{
+								Text:          "合併",
+								Font:          subTitleFont,
+								TextAlignment: AlignCenter,
+							},
 							PushButton{
-								Text:    "Merge Course",
+								Text:    "　製版數登記表",
 								Image:   iconMerge,
 								Font:    font,
 								MinSize: Size{Width: 200, Height: 50},
@@ -369,7 +389,7 @@ func runMainWindow() {
 
 							//merge
 							PushButton{
-								Text:    "Merge Video  ",
+								Text:    "　數位課綱資料",
 								Image:   iconMerge,
 								Font:    font,
 								MinSize: Size{Width: 200, Height: 50},
@@ -413,6 +433,7 @@ func runMainWindow() {
 									}
 								},
 							},
+							VSpacer{},
 						},
 					},
 				},
