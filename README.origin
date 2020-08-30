@@ -14,30 +14,35 @@
 第一層指令包含四種，分別是download、split、merge和calculate，各指令又包含了不同的第二層指令，其架構如下
 ```mermaid
 graph TD 
-A[trc] --> B(download)
-B-->B1[teacher]
-B-->B2[video]
-A[trc] --> C(split)
-C-->C1[scoreAlert]
-A[trc] --> D(calculate)
-D-->D2[difference]
+
+A[trc] --> B(start)
+B-->B1[gui]
+A[trc] --> C(download)
+C-->C1[teacher]
+C-->C2[video]
+A[trc] --> D(split)
+D-->D1[scoreAlert]
 A[trc] --> E(merge)
 E-->E1[course]
 E-->E2[video]
+A[trc] --> F(calculate)
+F-->F1[difference]
 ```
 
 ```mermaid
 graph TD 
-A[trc] --> B(下載檔案)
-B-->B1[教師資料]
-B-->B2[數位課綱連結]
-A[trc] --> C(分割檔案)
-C-->C1[預警總表]
-A[trc] --> D(計算檔案)
-D-->D2[成績差分]
+A[trc] --> B(啟動服務)
+B-->B1[圖形化介面]
+A[trc] --> C(下載檔案)
+C-->C1[教師資料]
+C-->C2[數位課綱連結]
+A[trc] --> D(分割檔案)
+D-->D1[預警總表]
 A[trc] --> E(合併檔案)
 E-->E1[製版數登記表]
 E-->E2[數位課綱資料]
+A[trc] --> F(計算檔案)
+F-->F2[成績差分]
 ```
 
 依照所需功能由上往下選擇指令即可，例如"下載教師資料"的指令為"trc download teacher"、"合併製版數登記表"的指令為"trc merge course"

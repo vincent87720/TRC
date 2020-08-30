@@ -16,7 +16,7 @@ func (f *flags) initFlag() (err error) {
 	}
 
 	f.startGuiFlagSet = flag.NewFlagSet("start gui", flag.ExitOnError)
-	err = f.startGuiFlag()
+	err = f.setStartGuiFlag()
 	if err != nil {
 		return nil
 	}
@@ -48,7 +48,7 @@ func (f *flags) initFlag() (err error) {
 	return nil
 }
 
-func (f *flags) startGuiFlag() (err error) {
+func (f *flags) setStartGuiFlag() (err error) {
 
 	f.startGuiFlagSet.BoolVar(&f.help, "help", false, "Usage")
 	return nil

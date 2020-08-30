@@ -327,7 +327,9 @@ func main() {
 
 	var trcCmd commandSet
 	trcCmd.commandSet()
-	trcCmd.setLyr1Command("download", "下載檔案(教師資料、數位課綱連結)")
+	trcCmd.setLyr1Command("start", "啟動服務(啟動圖形化介面)")
+	trcCmd.setLyr2Command("start", "gui", "啟動圖形化介面", f.startGuiFlagSet)
+	trcCmd.setLyr1Command("download", "下載檔案(下載教師資料、數位課綱連結)")
 	trcCmd.setLyr2Command("download", "video", "下載數位課綱影片連結", f.downloadVideoFlagSet)
 	trcCmd.setLyr2Command("download", "teacher", "下載教師資料", nil)
 	trcCmd.setLyr1Command("split", "分割檔案(分割預警總表)")

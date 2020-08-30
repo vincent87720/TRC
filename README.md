@@ -20,11 +20,14 @@
 
 ![下載trc.exe](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/dld.png)
 
-  
+
+# 開始
+
+[教學影片](https://youtu.be/hKECNRl-Zqs)
 
 # 指令
 
-第一層指令包含四種，分別是download、split、merge和calculate，各指令又包含了不同的第二層指令，其架構如下
+第一層指令包含五種，分別是start、download、split、merge和calculate，各指令又包含了不同的第二層指令，其架構如下
 
 ![指令](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/cmdEng.png)
 
@@ -35,6 +38,12 @@
 依照所需功能由上往下選擇指令即可，例如"下載教師資料"的指令為"trc download teacher"、"合併製版數登記表"的指令為"trc merge course"
 
   
+
+## 啟動圖形化介面
+**指令**
+- 輸入指令`trc start gui`可啟動圖形化使用者介面
+![圖形化使用者介面](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/gui.png)
+
 
 ## 下載教師資料
 
