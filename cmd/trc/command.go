@@ -97,7 +97,7 @@ func analyseCommand(cmdSet *commandSet, f *flags) {
 						f.startGuiFlagSet.Usage()
 						return
 					}
-					runMainWindow()
+					startWindow()
 				default:
 					cmdSet.layer2CommandUsage(os.Args[1])
 				}

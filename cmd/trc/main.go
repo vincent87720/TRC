@@ -314,7 +314,6 @@ func setInitialPath() {
 
 func init() {
 	setInitialPath()
-	exportAssets()
 	initLogging()
 }
 

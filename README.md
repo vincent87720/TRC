@@ -1,24 +1,16 @@
 
 # TRC Program
 
-  
-
 此程式提供給教資中心使用，程式包含教師資料下載、預警資料分割、製版數統計表合併、數位課綱資料合併以及尺規評量差分計算。
-
-  
-  
 
 # 下載
 
-  
-
-點擊[Download](https://github.com/vincent87720/TRC/raw/ver2.0/bin/trc.exe) 下載，或進入bin>trc.exe，點擊Download下載主程式
+點擊以下連結下載，或進入bin資料夾下載執行檔  
+[Windows版本](https://github.com/vincent87720/TRC/raw/ver2.0/bin/windows/trc.exe)
+[MacOS版本](https://github.com/vincent87720/TRC/raw/ver2.0/bin/darwin/trc)
+[Linux版本](https://github.com/vincent87720/TRC/raw/ver2.0/bin/darwin/trc)
 
 ![進入bin目錄](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/bin.png)
-
-![開啟trc.exe檔案](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/trc.png)
-
-![下載trc.exe](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/dld.png)
 
 
 # 開始
