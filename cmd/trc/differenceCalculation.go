@@ -26,7 +26,7 @@ func DifferenceCalculate(progChan chan int, inputFile file, outputFile file) {
 		return
 	}
 	progChan <- 1
-	err = dcf.fillSliceLength(len(dcf.firstRow))
+	err = dcf.fetchLongestLength()
 	if err != nil {
 		Error.Printf("%+v\n", err)
 		return
@@ -69,7 +69,7 @@ func (dcf *dcFile) differenceCalculate(outputFile file) (err error) {
 	if err != nil {
 		return err
 	}
-	err = dcf.fillSliceLength(len(dcf.firstRow))
+	err = dcf.fetchLongestLength()
 	if err != nil {
 		return err
 	}
@@ -282,6 +282,39 @@ func (dcf *dcFile) exportDataToExcel(outputFile file) (err error) {
 		fmt.Println("\rError: 無法將檔案\"" + outputFile.fileName + "\"儲存在\"" + outputFile.filePath + "\"目錄內")
 		err = errors.WithStack(err)
 		return err
+	}
+	return nil
+}
+
+//fetchLongestLength 取得所有字串陣列中最長且不是空白的長度
+func (dcf *dcFile) fetchLongestLength() (err error) {
+	lastPos := 0
+
+	if len(dcf.dataRows) <= 0 {
+		return fmt.Errorf("dataRows has no data")
+	}
+
+	//尋找所有字串陣列中最長且不是空白的長度
+	for _, value := range dcf.dataRows {
+		for i := lastPos; i < len(value); i++ {
+			if value[i] != "" && lastPos < i {
+				lastPos = i
+			}
+		}
+	}
+
+	longestLen := lastPos + 1
+
+	//將所有字串陣列長度變成與longestPos+1相同
+	for index, value := range dcf.dataRows {
+		if len(value) > longestLen {
+			dcf.dataRows[index] = dcf.dataRows[index][0:longestLen]
+		} else if len(value) < longestLen {
+			//若比longestLen小則將長度補足
+			for len(dcf.dataRows[index]) < longestLen {
+				dcf.dataRows[index] = append(dcf.dataRows[index], "")
+			}
+		}
 	}
 	return nil
 }

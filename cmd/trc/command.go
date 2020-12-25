@@ -774,6 +774,11 @@ func calcDifference(f *flags) (err error) {
 		quit <- 1
 		return err
 	}
+	err = inputFile.fetchLongestLength()
+	if err != nil {
+		quit <- 1
+		return err
+	}
 	err = inputFile.groupByStudent()
 	if err != nil {
 		quit <- 1
