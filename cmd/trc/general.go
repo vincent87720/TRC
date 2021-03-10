@@ -94,9 +94,31 @@ func (f *file) findCol(columnText string, result *int) (err error) {
 	for index, value := range f.dataRows[0] {
 		if value == columnText {
 			*result = index
+			break
 		}
 	}
 	if *result == -1 {
+		fmt.Printf("\rError: \"%s\" column not found\n", columnText)
+		err = errors.WithStack(fmt.Errorf("\"%s\" column not found", columnText))
+		return err
+	}
+	return nil
+}
+
+//findCol 尋找檔案內第一列與columnText相符合的所有儲存格
+func (f *file) findAllCol(columnText string, result *[]int) (err error) {
+	//*result = -1 //初始值為-1，若沒找到相對應的字串便會顯示-1
+	//尋找"教師姓名"欄位
+	if len(f.dataRows[0]) <= 0 {
+		err = errors.WithStack(fmt.Errorf("dataRows has no data"))
+		return err
+	}
+	for index, value := range f.dataRows[0] {
+		if value == columnText {
+			*result = append(*result, index)
+		}
+	}
+	if len(*result) == 0 {
 		fmt.Printf("\rError: \"%s\" column not found\n", columnText)
 		err = errors.WithStack(fmt.Errorf("\"%s\" column not found", columnText))
 		return err

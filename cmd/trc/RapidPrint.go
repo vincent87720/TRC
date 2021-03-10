@@ -97,6 +97,7 @@ func MergeRapidPrintData(progChan chan int, inputFile file, outputFile file) {
 
 //findColumn 尋找欄位
 func (rpf *rpFile) findColumn() (err error) {
+
 	err = rpf.findCol("教師姓名", &rpf.trnCol)
 	if err != nil {
 		return err
@@ -153,7 +154,7 @@ func (rpf *rpFile) findColumn() (err error) {
 	if err != nil {
 		return err
 	}
-	err = rpf.findCol("備註", &rpf.rmkCol)
+	err = rpf.findAllCol("教師姓名", &rpf.rmkCol)
 	if err != nil {
 		return err
 	}
@@ -214,6 +215,24 @@ func (rpf *rpFile) groupByTeacher() (err error) {
 			thisCourseName = value[rpf.csnCol]
 		}
 
+		//合併除了第一個教師姓名以外的所有教師姓名，並放入remark欄位
+		combineTeachers := ""
+		checked := false
+		for idx, val := range rpf.rmkCol {
+			if idx == 0 {
+				continue
+			}
+			if value[val] != "" {
+				if checked == false {
+					combineTeachers = combineTeachers + value[val]
+					checked = true
+				} else {
+					combineTeachers = combineTeachers + "、" + value[val]
+				}
+			}
+		}
+		// fmt.Println(combineTeachers)
+
 		if value[rpf.trnCol] != "" {
 			t := teacher{
 				teacherName:  value[rpf.trnCol],
@@ -240,7 +259,7 @@ func (rpf *rpFile) groupByTeacher() (err error) {
 					numOfPeople:   value[rpf.nopCol],
 					annex:         value[rpf.annCol],
 					annexID:       value[rpf.aidCol],
-					remark:        value[rpf.rmkCol],
+					remark:        combineTeachers,
 				},
 			}
 			rpf.gbtd[t] = append(rpf.gbtd[t], c)
@@ -298,9 +317,9 @@ func (rpf *rpFile) mergeData() (err error) {
 
 				//若符合名稱相同及學制限制，則進行合併
 				if rpp[index].courseName == rpp[nextIndex].courseName &&
-					(((rpp[index].system == "大日" || rpp[index].system == "進" || rpp[index].system == "四技") && (rpp[nextIndex].system == "大日" || rpp[nextIndex].system == "進" || rpp[nextIndex].system == "四技")) ||
-						((rpp[index].system == "博" || rpp[index].system == "日碩" || rpp[index].system == "碩") && (rpp[nextIndex].system == "博" || rpp[nextIndex].system == "日碩" || rpp[nextIndex].system == "碩")) ||
-						((rpp[index].system == "日碩" || rpp[index].system == "碩在職") && (rpp[nextIndex].system == "日碩" || rpp[nextIndex].system == "碩在職"))) {
+					(((rpp[index].system == "大學日間部" || rpp[index].system == "進修學士班" || rpp[index].system == "四技部") && (rpp[nextIndex].system == "大學日間部" || rpp[nextIndex].system == "進修學士班" || rpp[nextIndex].system == "四技部")) ||
+						((rpp[index].system == "大學日間部" || rpp[index].system == "研究所碩士班") && (rpp[nextIndex].system == "大學日間部" || rpp[nextIndex].system == "研究所碩士班")) ||
+						((rpp[index].system == "研究所碩士班" || rpp[index].system == "碩士在職專班") && (rpp[nextIndex].system == "研究所碩士班" || rpp[nextIndex].system == "碩士在職專班"))) {
 
 					//設定學制的map為1
 					tempSystemMap[rpp[nextIndex].system] = 1
@@ -406,12 +425,6 @@ func (rpf *rpFile) mergeData() (err error) {
 			//串接科目序號
 			if len(tempCourseIDXi) > 0 {
 				var newCourseID string
-				if len(rpp[index].remark) == 0 {
-					newCourseID = rpp[index].remark + "合"
-
-				} else {
-					newCourseID = rpp[index].remark + "、合"
-				}
 
 				for index, idXi := range tempCourseIDXi {
 					if index == 0 {
@@ -419,6 +432,13 @@ func (rpf *rpFile) mergeData() (err error) {
 					} else {
 						newCourseID = newCourseID + "," + idXi
 					}
+				}
+
+				if len(rpp[index].remark) == 0 {
+					newCourseID = "合" + newCourseID
+
+				} else {
+					newCourseID = "合" + newCourseID + "、" + rpp[index].remark
 				}
 				rpp[index].remark = newCourseID
 			}
@@ -464,7 +484,7 @@ func (rpf *rpFile) mergeData() (err error) {
 
 func (rpf *rpFile) transportToSlice() (err error) {
 	//設定第一列
-	rpf.newDataRows = append(rpf.newDataRows, rpf.firstRow)
+	rpf.newDataRows = append(rpf.newDataRows, []string{"教師姓名", "專兼任別", "開課學制", "開課系所", "科目序號", "系-組-年-班", "科目名稱", "選修別", "學分", "時數", "星期-時間-教室", "選課人數", "合班註記", "合班序號", "備註"})
 	if len(rpf.gbtd) <= 0 {
 		err = errors.WithStack(fmt.Errorf("gbtd has no data"))
 		return err

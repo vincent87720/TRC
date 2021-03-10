@@ -167,7 +167,7 @@ type rpFile struct {
 	nopCol int                      //選課人數欄位
 	annCol int                      //合班註記欄位
 	aidCol int                      //合班序號欄位
-	rmkCol int                      //備註欄位
+	rmkCol []int                    //備註欄位
 	gbtd   map[teacher][]rapidPrint //group by teacher data
 }
 
