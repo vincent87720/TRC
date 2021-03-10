@@ -1,12 +1,9 @@
 WINDOWS := windows
 LINUX := linux
 DARWIN := darwin
+PACKAGE := github.com/vincent87720/TRC/cmd/trc
 
-build:
-	make rmbin
-	make release
-	make cpbin
-
+build: rmbin release cpbin
 
 rmbin:
 	rm -rf ./bin/* ./test/bin/*
@@ -16,37 +13,26 @@ cpbin:
 
 
 ##########BUILD##########
-.PHONY: windows
-windows:
-	mkdir -p ./bin/$(WINDOWS)
-	cd ./cmd/trc;GOOS=$(WINDOWS) GOARCH=amd64 go build -o ../../bin/$(WINDOWS)/trc.exe
+.PHONY: buildwindows
+buildwindows:
+	GOOS=$(WINDOWS) GOARCH=amd64 go build -o bin/$(WINDOWS)/trc.exe $(PACKAGE)
 
-.PHONY: linux
-linux:
-	mkdir -p ./bin/$(LINUX)
-	cd ./cmd/trc;GOOS=$(LINUX) GOARCH=amd64 go build -o ../../bin/$(LINUX)/trc
+.PHONY: buildlinux
+buildlinux:
+	GOOS=$(LINUX) GOARCH=amd64 go build -o bin/$(LINUX)/trc $(PACKAGE)
 
-.PHONY: darwin
-darwin:
-	mkdir -p ./bin/$(DARWIN)
-	cd ./cmd/trc;GOOS=$(DARWIN) GOARCH=amd64 go build -o ../../bin/$(DARWIN)/trc
+.PHONY: builddarwin
+builddarwin:
+	GOOS=$(DARWIN) GOARCH=amd64 go build -o bin/$(DARWIN)/trc $(PACKAGE)
 
 .PHONY: release
-release: windows linux darwin
+release: buildwindows buildlinux builddarwin
 
 
 
 ##########RUN##########
-.PHONY: runwindows
-runWindows:
-	cd ./test/bin/windows;./trc.exe
-
-.PHONY: rundarwin
-runDarwin:
-	cd ./test/bin/darwin;./trc
-run: runwindows runDarwin
-
-
+run:
+	go run $(PACKAGE)
 
 # GOPATH := /d/Project/Go/src
 
