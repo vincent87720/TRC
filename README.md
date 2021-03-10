@@ -6,9 +6,9 @@
 # 下載
 
 點擊以下連結下載，或進入bin資料夾下載執行檔  
-[Windows版本](https://github.com/vincent87720/TRC/raw/ver2.0/bin/windows/trc.exe)
-[MacOS版本](https://github.com/vincent87720/TRC/raw/ver2.0/bin/darwin/trc)
-[Linux版本](https://github.com/vincent87720/TRC/raw/ver2.0/bin/linux/trc)
+[Windows版本](https://github.com/vincent87720/TRC/releases/download/v1.0.0/trc-windows-amd64.zip)
+[MacOS版本](https://github.com/vincent87720/TRC/releases/download/v1.0.0/trc-darwin-amd64.zip)
+[Linux版本](https://github.com/vincent87720/TRC/releases/download/v1.0.0/trc-linux-amd64.zip)
 
 ![進入bin目錄](https://github.com/vincent87720/TRC/blob/ver2.0/assets/mdImage/bin.png)
 
