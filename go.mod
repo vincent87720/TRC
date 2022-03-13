@@ -13,5 +13,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/text v0.3.2
 	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
 )

@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/text/encoding/traditionalchinese"
+	"golang.org/x/text/transform"
 )
 
 type rapidPrintXi []rapidPrint
@@ -16,6 +18,31 @@ func (rp rapidPrintXi) Len() int           { return len(rp) }
 func (rp rapidPrintXi) Less(i, j int) bool { return rp[i].courseName < rp[j].courseName }
 func (rp rapidPrintXi) Swap(i, j int)      { rp[i], rp[j] = rp[j], rp[i] }
 func (rp rapidPrintXi) Sort()              { sort.Sort(rp) }
+
+type rapidPrintXi_2 []rapidPrint
+
+func (rp rapidPrintXi_2) Len() int { return len(rp) }
+func (rp rapidPrintXi_2) Less(i, j int) bool {
+	iid, _ := strconv.Atoi(rp[i].courseID)
+	jid, _ := strconv.Atoi(rp[j].courseID)
+
+	return iid < jid
+}
+func (rp rapidPrintXi_2) Swap(i, j int) { rp[i], rp[j] = rp[j], rp[i] }
+func (rp rapidPrintXi_2) Sort()         { sort.Sort(rp) }
+
+type teacherXi []teacher
+
+func (t teacherXi) Len() int { return len(t) }
+func (t teacherXi) Less(i, j int) bool {
+	utf8ToBig5 := traditionalchinese.Big5.NewEncoder()
+	ibig5, _, _ := transform.String(utf8ToBig5, t[i].teacherName)
+	jbig5, _, _ := transform.String(utf8ToBig5, t[j].teacherName)
+
+	return ibig5 < jbig5
+}
+func (t teacherXi) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t teacherXi) Sort()         { sort.Sort(t) }
 
 // MergeRapidPrintData 剖析並合併開課資料
 // Goroutine interface for GUI
@@ -475,6 +502,12 @@ func (rpf *rpFile) mergeData() (err error) {
 			//將tempMerged加入到mergedRpData
 			mergedRpData[key] = append(mergedRpData[key], rpp[index])
 		}
+
+		//依照課程編號排序
+		var rp2 rapidPrintXi_2
+		rp2 = mergedRpData[key]
+		rp2.Sort()
+		mergedRpData[key] = rp2
 	}
 
 	//將合併過後的檔案加入
@@ -489,10 +522,20 @@ func (rpf *rpFile) transportToSlice() (err error) {
 		err = errors.WithStack(fmt.Errorf("gbtd has no data"))
 		return err
 	}
-	for key, rpXiValue := range rpf.gbtd {
-		for _, rpValue := range rpXiValue {
+
+	//依照教師姓名排序
+	keys := make([]teacher, 0, len(rpf.gbtd))
+	for t := range rpf.gbtd {
+		keys = append(keys, t)
+	}
+	var tXi teacherXi
+	tXi = keys
+	tXi.Sort()
+
+	for _, t := range tXi {
+		for _, rpValue := range rpf.gbtd[t] {
 			tempXi := make([]string, 0)
-			tempXi = append(tempXi, key.teacherName, key.teacherState, rpValue.system, rpValue.course.departmentName, rpValue.courseID, rpValue.course.departmentID+"-"+rpValue.group+"-"+rpValue.grade+"-"+rpValue.class, rpValue.courseName, rpValue.chooseSelect, rpValue.credit, rpValue.interval, rpValue.timeNClassRoom, rpValue.numOfPeople, rpValue.annex, rpValue.annexID, rpValue.remark)
+			tempXi = append(tempXi, t.teacherName, t.teacherState, rpValue.system, rpValue.course.departmentName, rpValue.courseID, rpValue.course.departmentID+"-"+rpValue.group+"-"+rpValue.grade+"-"+rpValue.class, rpValue.courseName, rpValue.chooseSelect, rpValue.credit, rpValue.interval, rpValue.timeNClassRoom, rpValue.numOfPeople, rpValue.annex, rpValue.annexID, rpValue.remark)
 			rpf.newDataRows = append(rpf.newDataRows, tempXi)
 		}
 	}
