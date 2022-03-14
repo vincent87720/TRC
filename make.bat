@@ -12,3 +12,4 @@ SET CGO_ENABLED=0
 SET GOOS=windows
 SET GOARCH=amd64
 go build -o .\bin\windows\trc.exe .\cmd\trc
+go build -ldflags="-H windowsgui" -o .\bin\windows\TRCGUI.exe .\cmd\TRCGUI
