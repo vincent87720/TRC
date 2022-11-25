@@ -462,15 +462,16 @@ func onOpenFileButtonClicked(owner walk.Form, filePath *walk.LineEdit, selector 
 		fmt.Fprintln(os.Stderr, "Cancel file selection")
 		return
 	}
-
-	filePath.SetText(dlg.FilePath)
-
-	keys := []*DropDownItem{}
-
+	
 	xlsx, err := excelize.OpenFile(dlg.FilePath)
 	if err != nil {
+		walk.MsgBox(owner, "不支援的檔案類型", "無法開啟檔案，請確認檔案為新版excel檔案格式(.xlsx)", walk.MsgBoxOK|walk.MsgBoxIconError)
 		logging.Error.Printf("%+v\n", err)
+		return
 	}
+
+	filePath.SetText(dlg.FilePath)
+	keys := []*DropDownItem{}
 	xlsxSht := xlsx.GetSheetMap()
 	for idx, val := range xlsxSht {
 		keys = append(keys, &DropDownItem{Key: idx, Name: val})
